@@ -13,7 +13,7 @@
 <div class="brand"><div class="logo">⌂</div><div><h1>نظام الحجوزات</h1><p>إدارة مرتبة لكل شركة — نسخة تجريبية</p></div></div>
 <h2>تسجيل الدخول</h2><p class="muted">ادخل بحساب تجريبي لاستعراض النظام.</p>
 <form id="loginForm"><div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" required placeholder="name@demo.test"></div><div class="field"><label>كلمة المرور</label><input id="password" type="password" required placeholder="كلمة المرور"></div><button class="full">دخول إلى النظام</button><p id="loginError" class="muted" style="color:#b42318"></p></form>
-<div class="demo"><b>حسابات التجربة</b><br>مشرف شركة الريادة: admin@demo.test / Admin123!<br>موظف شركة الريادة: employee@demo.test / Employee123!<br>مشرف شركة آفاق: admin2@demo.test / Admin123!<br>موظف شركة آفاق: employee2@demo.test / Employee123!</div>
+<div class="demo"><b>حسابات التجربة</b><br>المشرف: admin@demo.test / Admin123!<br>الموظف: employee@demo.test / Employee123!</div>
 <div class="notice">هذه نسخة تجريبية تحفظ البيانات في المتصفح فقط. الحسابات والفصل بين الشركات للتجربة وليست حماية إنتاجية حقيقية.</div>
 </section>
 <section id="appView" class="hidden">
@@ -28,18 +28,15 @@
 </section></main>
 <script>
 const USERS_KEY='bookingDemoUsersV1', DATA_KEY='bookingDemoBookingsV1';
-const companies={c1:'شركة الريادة للحجوزات',c2:'شركة آفاق للخدمات'};
+const companies={c1:'شركة الريادة للحجوزات'};
 const defaults=[
-{id:'u1',name:'مشرف الريادة',email:'admin@demo.test',password:'Admin123!',role:'admin',company:'c1'},
-{id:'u2',name:'موظف الريادة',email:'employee@demo.test',password:'Employee123!',role:'employee',company:'c1'},
-{id:'u3',name:'مشرف آفاق',email:'admin2@demo.test',password:'Admin123!',role:'admin',company:'c2'},
-{id:'u4',name:'موظف آفاق',email:'employee2@demo.test',password:'Employee123!',role:'employee',company:'c2'}
+{id:'u1',name:'المشرف',email:'admin@demo.test',password:'Admin123!',role:'admin',company:'c1'},
+{id:'u2',name:'الموظف',email:'employee@demo.test',password:'Employee123!',role:'employee',company:'c1'}
 ];
 const seed=[
 {id:'b1',company:'c1',customer:'محمد العتيبي',phone:'0501234567',service:'حجز قاعة',date:'2026-10-20',amount:850,status:'مؤكد'},
 {id:'b2',company:'c1',customer:'نورة القحطاني',phone:'0551234567',service:'تنسيق مناسبة',date:'2026-10-22',amount:1200,status:'بانتظار التأكيد'},
-{id:'b3',company:'c1',customer:'خالد الدوسري',phone:'0561234567',service:'حجز موعد',date:'2026-10-17',amount:250,status:'مكتمل'},
-{id:'b4',company:'c2',customer:'سارة الحربي',phone:'0531234567',service:'خدمات ضيافة',date:'2026-10-24',amount:650,status:'مؤكد'}
+{id:'b3',company:'c1',customer:'خالد الدوسري',phone:'0561234567',service:'حجز موعد',date:'2026-10-17',amount:250,status:'مكتمل'}
 ];
 const read=(k,f)=>{try{let x=JSON.parse(localStorage.getItem(k));return Array.isArray(x)?x:f}catch{return f}};
 if(!localStorage.getItem(USERS_KEY))localStorage.setItem(USERS_KEY,JSON.stringify(defaults));
