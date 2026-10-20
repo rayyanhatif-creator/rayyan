@@ -31,7 +31,7 @@
     <div class="stat"><small>إجمالي المبالغ المسجلة</small><strong id="totalRevenue">—</strong></div>
   </section>
   <div class="columns">
-    <section class="panel">
+    <section id="bookingPanel" class="panel">
       <h3>إضافة حجز جديد</h3>
       <p class="muted">يسجل الحجز في قاعدة البيانات مع حفظ السعر المستخدم وقت الإنشاء.</p>
       <form id="bookingForm">
@@ -50,6 +50,22 @@
       <p class="muted">يمكن إصدار QR للحجز بعد حفظه. الدفع الإلكتروني ورسائل واتساب مؤجلان للمستقبل.</p>
     </section>
   </div>
+  <section id="scannerPanel" class="panel hidden" style="margin-top:16px">
+    <h3>استقبال الزوار ومسح QR</h3>
+    <p class="muted">امسح رمز الحجز عند وصول الزائر لتسجيل حضوره. لا يمكن استخدام الرمز نفسه مرتين.</p>
+    <div class="actions"><button id="startScanBtn" type="button">تشغيل الكاميرا ومسح الرمز</button><button id="stopScanBtn" type="button" class="secondary">إيقاف الكاميرا</button></div>
+    <video id="scanVideo" class="scan-video hidden" playsinline muted></video>
+    <canvas id="scanCanvas" class="hidden"></canvas>
+    <div id="scanMessage" class="notice hidden" role="status"></div>
+  </section>
+  <section id="qrPanel" class="panel hidden" style="margin-top:16px">
+    <h3>رمز دخول الزائر</h3>
+    <p class="muted">أرسل صورة الرمز للزائر ليعرضها عند الوصول.</p>
+    <div class="qr-panel">
+      <div><p>أهلًا زائرنا الكريم</p><h3 id="qrCustomer"></h3><p id="qrBookingNo" class="muted"></p><div class="actions"><button id="saveQrBtn" type="button">حفظ صورة QR</button><button id="closeQrBtn" type="button" class="secondary">إغلاق</button></div></div>
+      <canvas id="qrCanvas" aria-label="رمز الحجز"></canvas>
+    </div>
+  </section>
 </div>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
