@@ -61,10 +61,11 @@ const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:'SAR',maximumFractionDigits:0}).format(Number(n||0));
 function message(id,text,type=''){const el=$(id);el.textContent=text;el.className='notice'+(type?' '+type:'');el.classList.remove('hidden')}
 function hideMessage(id){$(id).classList.add('hidden')}
-function priceFor(date,count){if(!date||!count||count<1)return null;const d=new Date(date+'T12:00:00');const dow=d.getDay();const rule=pricing.find(r=>r.is_active&&r.days_of_week.includes(dow));if(!rule)return null;return {amount:Number(rule.base_price)+Math.max(0,count-Number(rule.included_people))*Number(rule.extra_person_price),rule};}
+function localDateISO(){const d=new Date();const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+function priceFor(date,count){if(!date||!count||count<1)return null;const d=new Date(date+'T12:00:00');const dow=d.getDay();const rule=pricing.find(r=>r.is_active&&r.days_of_week.includes(dow)&&(!r.valid_from||date>=r.valid_from)&&(!r.valid_until||date<=r.valid_until));if(!rule)return null;return {amount:Number(rule.base_price)+Math.max(0,count-Number(rule.included_people))*Number(rule.extra_person_price),rule};}
 function refreshPrice(){const count=Number($('partySize').value);const result=priceFor($('visitDate').value,count);$('pricePreview').textContent=result?'السعر المتوقع: '+money(result.amount)+' — '+(result.rule.rule_name||'حسب التسعيرة المعتمدة'):'اختر تاريخ الزيارة وعدد الأشخاص لاحتساب السعر.'}
-$('visitDate').min=new Date().toLocaleDateString('en-CA');
-$('visitDate').value=new Date().toLocaleDateString('en-CA');
+$('visitDate').min=localDateISO();
+$('visitDate').value=localDateISO();
 $('partySize').addEventListener('input',refreshPrice);$('visitDate').addEventListener('change',refreshPrice);
 async function loadSession(){
  const {data:{session},error}=await supabase.auth.getSession();if(error)throw error;
@@ -99,7 +100,7 @@ $('bookingForm').addEventListener('submit',async e=>{e.preventDefault();hideMess
  if(!result)throw new Error('لا توجد تسعيرة فعالة لهذا اليوم. راجع المشرف.');
  const {error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value.trim()||null,party_size:count,amount_due:result.amount,amount_paid:0,price_rule_snapshot:{rule_name:result.rule.rule_name,base_price:Number(result.rule.base_price),included_people:Number(result.rule.included_people),extra_person_price:Number(result.rule.extra_person_price),party_size:count,amount_due:result.amount,currency:'SAR'},payment_status:'unpaid',booking_status:'pending',created_by:employee.id});
  if(error)throw error;
- $('bookingForm').reset();$('visitDate').value=new Date().toLocaleDateString('en-CA');$('partySize').value='2';refreshPrice();message('appMessage','تم حفظ الحجز بنجاح. لم يتم إنشاء رابط دفع أو QR بعد؛ سنضيفهما بعد إعداد التكاملات.','ok');await loadBookings();
+ $('bookingForm').reset();$('visitDate').value=localDateISO();$('partySize').value='2';refreshPrice();message('appMessage','تم حفظ الحجز بنجاح. لم يتم إنشاء رابط دفع أو QR بعد؛ سنضيفهما بعد إعداد التكاملات.','ok');await loadBookings();
  }catch(err){message('appMessage',err.message||'تعذر حفظ الحجز.','error')}finally{btn.disabled=false;btn.textContent='حفظ الحجز'}});
 $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
