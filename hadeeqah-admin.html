@@ -10,6 +10,20 @@
 
 /* Responsive layout */
 .wrap{width:100%;max-width:none;margin:0 auto;padding:12px}.header{margin:0 0 12px}.stats{gap:8px;margin-bottom:12px}.stat,.panel{padding:12px}.columns{grid-template-columns:minmax(260px,.8fr) minmax(0,1.7fr);gap:12px}.field{margin:10px 0}.field input,.field select{min-height:42px;padding:10px}button{min-height:40px;padding:10px 12px}@media(max-width:760px){.wrap{padding:9px}.header{align-items:flex-start}.header>div:last-child{display:flex;gap:5px;flex-wrap:wrap}.logo{width:40px;height:40px}.stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.stat,.panel{padding:10px}.stat strong{font-size:clamp(16px,4.5vw,22px)}.stat small{font-size:10px;line-height:1.5}.columns{grid-template-columns:minmax(0,1fr);gap:10px}.table-wrap{max-width:100%;overflow-x:auto}table{min-width:590px}th,td{font-size:12px;padding:8px 6px}.login{width:100%;max-width:440px;margin:3vh auto;padding:20px}.qr-panel{grid-template-columns:minmax(0,1fr) minmax(100px,38%);gap:10px}.qr-panel canvas{width:100%;height:auto!important}}@media(max-width:390px){.header button{padding:8px;font-size:12px}.badge{font-size:10px;padding:5px 7px}.stat,.panel{padding:8px}.stat small{font-size:9px}.stat strong{font-size:16px}.qr-panel{grid-template-columns:1fr}}
+
+/* QR opens as a centered modal after saving a booking */
+.qr-modal{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+.qr-modal.hidden{display:none!important}
+.qr-modal-card{position:relative;width:min(100%,440px);max-height:calc(100dvh - 36px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 24px 80px #0009;text-align:center}
+.qr-modal-card>h3{margin:4px 34px 8px;font-size:20px}
+.qr-modal-card>.muted{margin:0 0 14px}
+.qr-close{position:absolute;top:12px;left:12px;width:38px;height:38px;min-height:38px;padding:0;margin:0!important}
+.qr-modal-content{display:flex;flex-direction:column;align-items:center;gap:12px}
+.qr-welcome p{margin:6px 0}
+.qr-welcome h3{font-size:20px;margin:4px 0}
+.qr-modal-card canvas{display:block;width:min(100%,280px);height:auto!important;max-height:45dvh;object-fit:contain;background:#fff;padding:10px;border-radius:12px}
+.qr-modal-card .full{margin-top:16px}
+@media(max-width:420px){.qr-modal{padding:10px}.qr-modal-card{padding:20px 14px;max-height:calc(100dvh - 20px);border-radius:16px}.qr-modal-card canvas{width:min(100%,250px);max-height:40dvh}}
 </style>
 </head>
 <body>
@@ -61,12 +75,16 @@
     <canvas id="scanCanvas" class="hidden"></canvas>
     <div id="scanMessage" class="notice hidden" role="status"></div>
   </section>
-  <section id="qrPanel" class="panel hidden" style="margin-top:16px">
-    <h3>رمز دخول الزائر</h3>
-    <p class="muted">أرسل صورة الرمز للزائر ليعرضها عند الوصول.</p>
-    <div class="qr-panel">
-      <div><p>أهلًا زائرنا الكريم</p><h3 id="qrCustomer"></h3><p id="qrBookingNo" class="muted"></p><div class="actions"><button id="saveQrBtn" type="button">حفظ صورة QR</button><button id="closeQrBtn" type="button" class="secondary">إغلاق</button></div></div>
-      <canvas id="qrCanvas" aria-label="رمز الحجز"></canvas>
+  <section id="qrPanel" class="qr-modal hidden" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+    <div class="qr-modal-card">
+      <button id="closeQrBtn" type="button" class="secondary qr-close" aria-label="إغلاق">✕</button>
+      <h3 id="qrTitle">رمز دخول الزائر</h3>
+      <p class="muted">تم حفظ الحجز بنجاح. احفظ صورة الرمز وأرسلها للزائر.</p>
+      <div class="qr-modal-content">
+        <div class="qr-welcome"><p>أهلًا زائرنا الكريم</p><h3 id="qrCustomer"></h3><p id="qrBookingNo" class="muted"></p></div>
+        <canvas id="qrCanvas" aria-label="رمز الحجز"></canvas>
+      </div>
+      <button id="saveQrBtn" type="button" class="full">حفظ صورة QR</button>
     </div>
   </section>
 </div>
@@ -131,8 +149,11 @@ $('bookingForm').addEventListener('submit',async e=>{e.preventDefault();hideMess
 
 function randomToken(){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
 async function sha256(value){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')}
-async function showQr(booking,token){const qr=await getQRCode();const payload=JSON.stringify({type:'hadeeqah-booking',bookingId:booking.id,token});await qr.toCanvas($('qrCanvas'),payload,{width:300,margin:2,errorCorrectionLevel:'M',color:{dark:'#121212',light:'#ffffff'}});$('qrCustomer').textContent=booking.customer_name;$('qrBookingNo').textContent='رقم العميل: '+booking.booking_number;$('qrPanel').classList.remove('hidden');$('qrPanel').scrollIntoView({behavior:'smooth',block:'start'})}
-$('closeQrBtn').addEventListener('click',()=>$('qrPanel').classList.add('hidden'));
+async function showQr(booking,token){const qr=await getQRCode();const payload=JSON.stringify({type:'hadeeqah-booking',bookingId:booking.id,token});await qr.toCanvas($('qrCanvas'),payload,{width:300,margin:2,errorCorrectionLevel:'M',color:{dark:'#121212',light:'#ffffff'}});$('qrCustomer').textContent=booking.customer_name;$('qrBookingNo').textContent='رقم العميل: '+booking.booking_number;$('qrPanel').classList.remove('hidden');document.body.style.overflow='hidden';$('closeQrBtn').focus()}
+function closeQrModal(){$('qrPanel').classList.add('hidden');document.body.style.overflow=''}
+ $('closeQrBtn').addEventListener('click',closeQrModal);
+ $('qrPanel').addEventListener('click',e=>{if(e.target===$('qrPanel'))closeQrModal()});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('qrPanel').classList.contains('hidden'))closeQrModal()});
 $('saveQrBtn').addEventListener('click',()=>{const a=document.createElement('a');a.download='hadeeqah-qr.png';a.href=$('qrCanvas').toDataURL('image/png');a.click()});
 async function stopScanner(){scanActive=false;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}$('scanVideo').srcObject=null;$('scanVideo').classList.add('hidden')}
 $('stopScanBtn').addEventListener('click',stopScanner);
