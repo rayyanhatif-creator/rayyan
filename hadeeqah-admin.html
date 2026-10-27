@@ -31,15 +31,11 @@
 <div id="loginView" class="wrap">
   <section class="login">
     <div class="brand"><div class="logo">🦜</div><div><h1>حديقة طيور الريان</h1><div class="muted">نظام الحجوزات الداخلي</div></div></div>
-    <h2>الدخول برقم الجوال</h2><p class="muted">أدخل رقم جوالك السعودي، وسنرسل لك رمز تحقق برسالة نصية.</p>
-    <form id="phoneLoginForm">
+    <h2>تسجيل الدخول</h2><p class="muted">أدخل رقم جوالك وكلمة المرور للدخول إلى نظام الحجوزات.</p>
+    <form id="phonePasswordLoginForm">
       <div class="field"><label for="loginPhone">رقم الجوال</label><input id="loginPhone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="20" placeholder="05xxxxxxxx"></div>
-      <button id="sendOtpBtn" class="full" type="submit">إرسال رمز التحقق SMS</button>
-    </form>
-    <form id="verifyOtpForm" class="hidden">
-      <div class="field"><label for="loginOtp">رمز التحقق المرسل برسالة</label><input id="loginOtp" inputmode="numeric" autocomplete="one-time-code" required minlength="4" maxlength="8" placeholder="أدخل الرمز"></div>
-      <button id="verifyOtpBtn" class="full" type="submit">تأكيد الرمز وتسجيل الدخول</button>
-      <button id="resendOtpBtn" class="full secondary" type="button">إعادة إرسال الرمز</button>
+      <div class="field"><label for="phonePassword">كلمة المرور</label><input id="phonePassword" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
+      <button id="phonePasswordLoginBtn" class="full" type="submit">دخول إلى النظام</button>
     </form>
     <details style="margin-top:18px"><summary class="muted" style="cursor:pointer">إعداد الحساب الحالي / دخول احتياطي</summary>
       <p class="muted">استخدم هذا الخيار مؤقتًا لربط رقم جوالك بحساب المشرف الحالي إذا لم تفعّل الدخول بالجوال بعد.</p>
@@ -190,17 +186,15 @@ async function sendLoginOtp(){
   message('loginMessage','أرسلنا رمز التحقق إلى '+phone+'. أدخل الرمز لإكمال الدخول.','ok');
  }catch(err){message('loginMessage',err.message||'تعذر إرسال رمز التحقق.','error')}
 }
-$('phoneLoginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('sendOtpBtn');btn.disabled=true;btn.textContent='جارٍ إرسال الرمز…';try{await sendLoginOtp()}finally{btn.disabled=false;btn.textContent='إرسال رمز التحقق SMS'}});
-$('resendOtpBtn').addEventListener('click',sendLoginOtp);
-$('verifyOtpForm').addEventListener('submit',async e=>{
- e.preventDefault();const btn=$('verifyOtpBtn');btn.disabled=true;btn.textContent='جارٍ التحقق…';hideMessage('loginMessage');
+$('phonePasswordLoginForm').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=$('phonePasswordLoginBtn');btn.disabled=true;btn.textContent='جارٍ تسجيل الدخول…';hideMessage('loginMessage');
  try{
-  if(!pendingLoginPhone)throw new Error('أرسل رمز التحقق أولًا.');
-  const {error}=await supabase.auth.verifyOtp({phone:pendingLoginPhone,token:$('loginOtp').value.trim(),type:'sms'});
+  const phone=normalizeSaudiPhone($('loginPhone').value);
+  const {error}=await supabase.auth.signInWithPassword({phone,password:$('phonePassword').value});
   if(error)throw error;
   await loadSession();
- }catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تأكد من الرمز ورقم الجوال.','error')}
- finally{btn.disabled=false;btn.textContent='تأكيد الرمز وتسجيل الدخول'}
+ }catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تحقق من رقم الجوال وكلمة المرور.','error')}
+ finally{btn.disabled=false;btn.textContent='دخول إلى النظام'}
 });
 $('phoneSetupForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=$('setupSendBtn');btn.disabled=true;btn.textContent='جارٍ إرسال الرمز…';hideMessage('phoneSetupMessage');
