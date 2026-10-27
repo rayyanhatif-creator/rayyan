@@ -136,6 +136,31 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_mwiKjxLYtMCXwZ_ZdC7TLA_6Gz4GbiD
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 let sessionUser=null, employee=null, company=null, pricing=[], scanStream=null, scanActive=false, activeQrBooking=null, employeeDirectory=[];
 const $=id=>document.getElementById(id);
+function showLogin(){ $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); }
+async function loadSession(){
+ const {data:{session},error:sessionError}=await supabase.auth.getSession();
+ if(sessionError) throw sessionError;
+ if(!session){showLogin();return;}
+ sessionUser=session.user;
+ const {data:rows,error:employeeError}=await supabase.from('hadeeqah_employees').select('*').eq('auth_user_id',session.user.id).eq('is_active',true).limit(1);
+ if(employeeError) throw employeeError;
+ employee=rows?.[0];
+ if(!employee) throw new Error('تم تسجيل الدخول، لكن لا يوجد ملف موظف نشط مرتبط بهذا الحساب.');
+ const {data:co,error:companyError}=await supabase.from('hadeeqah_companies').select('*').eq('id',employee.company_id).maybeSingle();
+ if(companyError) throw companyError;
+ company=co;
+ if(!company) throw new Error('تعذر العثور على الشركة المرتبطة بالحساب.');
+ $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
+ $('roleBadge').textContent=employee.role==='supervisor'?'مشرف':employee.role==='reception'?'مسؤول استقبال ومسح QR':'موظف حجوزات';
+ try{await loadBookings();}catch(err){message('appMessage',err.message||'تعذر تحميل الحجوزات.','error');}
+ if(['reception','supervisor'].includes(employee.role)&&typeof loadTodayBookings==='function') await loadTodayBookings();
+ if(employee.role==='supervisor'){
+  if(typeof loadEmployees==='function') await loadEmployees();
+  if(typeof loadReports==='function') await loadReports();
+  if(typeof loadAuditLogs==='function') await loadAuditLogs();
+ }
+}
+
 const money=n=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:'SAR',maximumFractionDigits:0}).format(Number(n||0));
 function message(id,text,type=''){const el=$(id);el.textContent=text;el.className='notice'+(type?' '+type:'');el.classList.remove('hidden')}
 function hideMessage(id){$(id).classList.add('hidden')}
