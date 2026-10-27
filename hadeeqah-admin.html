@@ -157,9 +157,8 @@ async function loadEmployees(){
    const role=prompt('اكتب الدور بالضبط: booking_employee أو reception أو supervisor',e.role);if(role===null)return;
    if(!['booking_employee','reception','supervisor'].includes(role.trim())){message('appMessage','الدور غير صحيح. استخدم booking_employee أو reception أو supervisor.','error');return}
    const code=prompt('رمز الموظف (اختياري)',e.employee_code||'');if(code===null)return;
-   const active=e.is_current_user?true:confirm(e.is_active?'اضغط موافق لإبقاء الموظف نشطًا، أو إلغاء لإيقافه.\n\nالحالة الحالية: نشط':'اضغط موافق لتفعيل الموظف، أو إلغاء لإبقائه موقوفًا.');
-   let nextActive=active;
-   if(!e.is_current_user&&e.is_active){nextActive=confirm('هل تريد إبقاء '+e.display_name+' نشطًا؟ اضغط إلغاء لإيقاف الحساب.')}
+   let nextActive=e.is_active;
+   if(!e.is_current_user){nextActive=e.is_active?confirm('هل تريد إبقاء '+e.display_name+' نشطًا؟ موافق = نشط، إلغاء = إيقاف.'):confirm('هل تريد تفعيل '+e.display_name+'؟ موافق = تفعيل، إلغاء = إبقاء موقوفًا.')}
    edit.disabled=true;
    try{
     const {error:updateError}=await supabase.rpc('hadeeqah_update_employee',{p_employee_id:e.employee_id,p_display_name:name.trim(),p_role:role.trim(),p_is_active:nextActive,p_employee_code:code.trim()||null});
