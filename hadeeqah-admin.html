@@ -32,11 +32,19 @@
   <section class="login">
     <div class="brand"><div class="logo">🦜</div><div><h1>حديقة طيور الريان</h1><div class="muted">نظام الحجوزات الداخلي</div></div></div>
     <h2>تسجيل الدخول</h2><p class="muted">أدخل رقم جوالك وكلمة المرور للدخول إلى نظام الحجوزات.</p>
-    <form id="loginForm">
-      <div class="field"><label for="email">البريد الإلكتروني للحساب الحالي</label><input id="email" type="email" autocomplete="username" required value="rayyanhatif@gmail.com"></div>
-      <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
-      <button id="loginBtn" class="full" type="submit">دخول إلى النظام</button>
+    <form id="phonePasswordLoginForm">
+      <div class="field"><label for="loginPhone">رقم الجوال</label><input id="loginPhone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="20" placeholder="05xxxxxxxx"></div>
+      <div class="field"><label for="phonePassword">كلمة المرور</label><input id="phonePassword" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
+      <button id="phonePasswordLoginBtn" class="full" type="submit">دخول إلى النظام</button>
     </form>
+    <details style="margin-top:18px"><summary class="muted" style="cursor:pointer">إعداد الحساب الحالي / دخول احتياطي</summary>
+      <p class="muted">للمشرف الحالي: أدخل رقم الجوال وكلمة المرور المسجلين للحساب.</p>
+      <form id="loginForm">
+        <div class="field"><label for="email">البريد الإلكتروني للحساب الحالي</label><input id="email" type="email" autocomplete="username" required placeholder="البريد المسجل حاليًا"></div>
+        <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
+        <button id="loginBtn" class="full" type="submit">دخول احتياطي</button>
+      </form>
+    </details>
     <div id="loginMessage" class="notice hidden" role="status"></div>
   </section>
 </div>
@@ -272,6 +280,21 @@ function normalizeSaudiPhone(raw){
  if(!/^9665\d{8}$/.test(digits))throw new Error('أدخل رقم جوال سعودي صحيحًا مثل 05xxxxxxxx.');
  return '+'+digits;
 }
+$('phonePasswordLoginForm').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=$('phonePasswordLoginBtn');btn.disabled=true;btn.textContent='جارٍ تسجيل الدخول…';hideMessage('loginMessage');
+ try{
+  const phone=normalizeSaudiPhone($('loginPhone').value);
+  const password=$('phonePassword').value;
+  // Supervisor signs in with the existing email account using their registered phone as the login identifier; no SMS required.
+  const credentials=phone==='+966579820107'
+   ? {email:'rayyanhatif@gmail.com',password}
+   : {phone,password};
+  const {error}=await supabase.auth.signInWithPassword(credentials);
+  if(error)throw error;
+  await loadSession();
+ }catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تحقق من رقم الجوال وكلمة المرور.','error')}
+ finally{btn.disabled=false;btn.textContent='دخول إلى النظام'}
+});
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('loginBtn');btn.disabled=true;btn.textContent='جارٍ الدخول…';hideMessage('loginMessage');try{const {error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await loadSession()}catch(err){message('loginMessage',err.message||'تعذر الدخول الاحتياطي. تحقق من البيانات وحاول مجددًا.','error')}finally{btn.disabled=false;btn.textContent='دخول احتياطي'}});
 $('bookingForm').addEventListener('submit',async e=>{e.preventDefault();hideMessage('appMessage');const btn=$('createBookingBtn');btn.disabled=true;btn.textContent='جارٍ حفظ الحجز…';try{
  if(!['booking_employee','supervisor'].includes(employee.role))throw new Error('صلاحيتك الحالية لا تسمح بإنشاء الحجوزات.');
