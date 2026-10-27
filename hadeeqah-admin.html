@@ -103,10 +103,11 @@
       <h3 id="qrTitle">رمز دخول الزائر</h3>
       <p class="muted">تم حفظ الحجز بنجاح. احفظ صورة الرمز وأرسلها للزائر.</p>
       <div class="qr-modal-content">
-        <div class="qr-welcome"><p>أهلًا زائرنا الكريم</p><h3 id="qrCustomer"></h3><p id="qrBookingNo" class="muted"></p></div>
-        <canvas id="qrCanvas" aria-label="رمز الحجز"></canvas>
+        <canvas id="qrTicketCanvas" aria-label="بطاقة دخول الزائر مع رمز QR" style="display:block;width:min(100%,360px);height:auto!important;background:#fff;border-radius:14px"></canvas>
+        <canvas id="qrCanvas" aria-label="رمز QR الأصلي" style="display:none"></canvas>
+        <div class="qr-welcome"><p>مرحبًا بك في حديقة طيور الريان</p><h3 id="qrCustomer"></h3><p id="qrBookingNo" class="muted"></p></div>
       </div>
-      <button id="shareQrBtn" type="button" class="full">مشاركة QR مع الزائر</button><button id="saveQrBtn" type="button" class="full secondary">حفظ صورة QR</button>
+      <button id="shareQrBtn" type="button" class="full">إرسال / مشاركة البطاقة مع الزائر</button><button id="saveQrBtn" type="button" class="full secondary">حفظ البطاقة في الصور</button>
     </div>
   </section>
 </div>
@@ -227,7 +228,24 @@ $('bookingForm').addEventListener('submit',async e=>{e.preventDefault();hideMess
 
 function randomToken(){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
 async function sha256(value){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')}
-async function showQr(booking,token){activeQrBooking=booking;const qr=await getQRCode();const payload=JSON.stringify({type:'hadeeqah-booking',bookingId:booking.id,token});await qr.toCanvas($('qrCanvas'),payload,{width:300,margin:2,errorCorrectionLevel:'M',color:{dark:'#121212',light:'#ffffff'}});$('qrCustomer').textContent=booking.customer_name;$('qrBookingNo').textContent='رقم العميل: '+booking.booking_number;$('qrPanel').classList.remove('hidden');document.body.style.overflow='hidden';$('closeQrBtn').focus()}
+async function drawQrTicket(booking){
+ const qrCanvas=$('qrCanvas'),ticket=$('qrTicketCanvas'),ctx=ticket.getContext('2d');
+ const width=720,pad=36,qrSize=360;
+ ticket.width=width;ticket.height=760;
+ ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,760);
+ ctx.fillStyle='#005c45';ctx.fillRect(0,0,width,150);
+ ctx.textAlign='center';ctx.direction='rtl';ctx.fillStyle='#ffffff';
+ ctx.font='bold 38px Tahoma,Arial,sans-serif';ctx.fillText('مرحبًا بك في حديقة طيور الريان',width/2,64);
+ ctx.font='22px Tahoma,Arial,sans-serif';ctx.fillText('نتمنى لك زيارة ممتعة',width/2,108);
+ ctx.fillStyle='#171717';ctx.font='bold 34px Tahoma,Arial,sans-serif';ctx.fillText(String(booking.customer_name||'زائرنا الكريم'),width/2,205);
+ ctx.font='22px Tahoma,Arial,sans-serif';ctx.fillStyle='#555555';ctx.fillText('رقم الحجز: '+String(booking.booking_number),width/2,248);
+ const x=(width-qrSize)/2,y=285;
+ ctx.fillStyle='#ffffff';ctx.fillRect(x-14,y-14,qrSize+28,qrSize+28);
+ ctx.drawImage(qrCanvas,x,y,qrSize,qrSize);
+ ctx.fillStyle='#005c45';ctx.fillRect(pad,690,width-pad*2,3);
+ ctx.fillStyle='#333333';ctx.font='20px Tahoma,Arial,sans-serif';ctx.fillText('أبرز هذا الرمز عند الوصول',width/2,730);
+}
+async function showQr(booking,token){activeQrBooking=booking;const qr=await getQRCode();const payload=JSON.stringify({type:'hadeeqah-booking',bookingId:booking.id,token});await qr.toCanvas($('qrCanvas'),payload,{width:300,margin:2,errorCorrectionLevel:'H',color:{dark:'#121212',light:'#ffffff'}});$('qrCustomer').textContent=booking.customer_name;$('qrBookingNo').textContent='رقم الحجز: '+booking.booking_number;await drawQrTicket(booking);$('qrPanel').classList.remove('hidden');document.body.style.overflow='hidden';$('closeQrBtn').focus()}
 function closeQrModal(){$('qrPanel').classList.add('hidden');document.body.style.overflow='';activeQrBooking=null}
  $('closeQrBtn').addEventListener('click',closeQrModal);
  $('qrPanel').addEventListener('click',e=>{if(e.target===$('qrPanel'))closeQrModal()});
@@ -237,7 +255,7 @@ async function shareQrWithGuest(){
  const btn=$('shareQrBtn');const original=btn.textContent;btn.disabled=true;btn.textContent='جارٍ تجهيز المشاركة…';
  try{
   if(!activeQrBooking)throw new Error('لا يوجد حجز مفتوح للمشاركة.');
-  const canvas=$('qrCanvas');
+  const canvas=$('qrTicketCanvas');
   const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('تعذر تجهيز صورة الرمز.')),'image/png'));
   const booking=activeQrBooking;
   const file=new File([blob],'hadeeqah-qr-'+booking.booking_number+'.png',{type:'image/png'});
@@ -253,7 +271,7 @@ async function shareQrWithGuest(){
 }
 $('shareQrBtn').addEventListener('click',shareQrWithGuest);
 
-$('saveQrBtn').addEventListener('click',async()=>{const btn=$('saveQrBtn');const original=btn.textContent;btn.disabled=true;btn.textContent='جارٍ تجهيز الصورة…';try{const canvas=$('qrCanvas');const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('تعذر تجهيز صورة الرمز.')),'image/png'));const bookingNo=($('qrBookingNo').textContent.match(/[0-9٠-٩]+/)||[])[0]||'booking';const file=new File([blob],'hadeeqah-qr-'+bookingNo+'.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({files:[file],title:'رمز حجز حديقة طيور الريان',text:'رمز دخول الزائر'});}else{const a=document.createElement('a');a.download=file.name;a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);message('appMessage','المتصفح لا يدعم الحفظ المباشر عبر قائمة المشاركة؛ تم فتح تنزيل الصورة. على الآيفون اختر مشاركة ثم حفظ الصورة إن ظهر الخيار.','');}}catch(err){if(err.name!=='AbortError')message('appMessage','تعذر مشاركة الصورة: '+(err.message||'حاول مرة أخرى.'),'error')}finally{btn.disabled=false;btn.textContent=original}});
+$('saveQrBtn').addEventListener('click',async()=>{const btn=$('saveQrBtn');const original=btn.textContent;btn.disabled=true;btn.textContent='جارٍ تجهيز الصورة…';try{const canvas=$('qrTicketCanvas');const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('تعذر تجهيز صورة الرمز.')),'image/png'));const bookingNo=($('qrBookingNo').textContent.match(/[0-9٠-٩]+/)||[])[0]||'booking';const file=new File([blob],'hadeeqah-qr-'+bookingNo+'.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({files:[file],title:'بطاقة حجز حديقة طيور الريان',text:'مرحبًا بك في حديقة طيور الريان'});}else{const a=document.createElement('a');a.download=file.name;a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);message('appMessage','المتصفح لا يدعم الحفظ المباشر عبر قائمة المشاركة؛ تم فتح تنزيل الصورة. على الآيفون اختر مشاركة ثم حفظ الصورة إن ظهر الخيار.','');}}catch(err){if(err.name!=='AbortError')message('appMessage','تعذر مشاركة الصورة: '+(err.message||'حاول مرة أخرى.'),'error')}finally{btn.disabled=false;btn.textContent=original}});
 async function stopScanner(){scanActive=false;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}$('scanVideo').srcObject=null;$('scanVideo').classList.add('hidden')}
 $('stopScanBtn').addEventListener('click',stopScanner);
 $('startScanBtn').addEventListener('click',async()=>{hideMessage('scanMessage');if(!['reception','supervisor'].includes(employee?.role)){message('scanMessage','هذه الصفحة مخصصة للاستقبال والمشرف.','error');return}try{await stopScanner();scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});const video=$('scanVideo');video.srcObject=scanStream;video.classList.remove('hidden');await video.play();scanActive=true;const canvas=$('scanCanvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});const tick=async()=>{if(!scanActive)return;if(video.readyState>=2){canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.drawImage(video,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);const decode=await getJsQR();const code=decode(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'});if(code?.data){scanActive=false;await stopScanner();await processScannedQr(code.data);return}}requestAnimationFrame(tick)};requestAnimationFrame(tick)}catch(err){message('scanMessage','تعذر تشغيل الكاميرا. تأكد من السماح باستخدام الكاميرا وفتح الموقع عبر HTTPS. '+(err.message||''),'error')}});
