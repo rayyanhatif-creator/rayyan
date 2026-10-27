@@ -38,7 +38,7 @@
       <button id="phonePasswordLoginBtn" class="full" type="submit">دخول إلى النظام</button>
     </form>
     <details style="margin-top:18px"><summary class="muted" style="cursor:pointer">إعداد الحساب الحالي / دخول احتياطي</summary>
-      <p class="muted">استخدم هذا الخيار مؤقتًا لربط رقم جوالك بحساب المشرف الحالي إذا لم تفعّل الدخول بالجوال بعد.</p>
+      <p class="muted">للمشرف الحالي: أدخل رقم الجوال وكلمة المرور المسجلين للحساب.</p>
       <form id="loginForm">
         <div class="field"><label for="email">البريد الإلكتروني للحساب الحالي</label><input id="email" type="email" autocomplete="username" required placeholder="البريد المسجل حاليًا"></div>
         <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
@@ -51,19 +51,6 @@
 <div id="appView" class="wrap hidden">
   <header class="header"><div><div class="brand" style="margin:0"><div class="logo">🦜</div><div><h1>حديقة طيور الريان</h1><div class="muted">لوحة إدارة الحجوزات</div></div></div></div><div><span id="roleBadge" class="badge">حساب موظف</span> <button id="refreshBtn" class="secondary">تحديث</button> <button id="logoutBtn" class="secondary">خروج</button></div></header>
   <div id="appMessage" class="notice hidden" role="status"></div>
-  <section id="phoneSetupPanel" class="panel hidden" style="margin-bottom:12px">
-    <h3>تفعيل الدخول برقم الجوال</h3>
-    <p class="muted">إعداد اختياري لربط رقم الجوال بالحساب. تسجيل الدخول للمشرف يتم برقم الجوال وكلمة المرور دون SMS.</p>
-    <form id="phoneSetupForm">
-      <div class="field"><label for="setupPhone">رقم جوالك السعودي</label><input id="setupPhone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="20" placeholder="05xxxxxxxx"></div>
-      <button id="setupSendBtn" type="submit">إرسال رمز التفعيل</button>
-    </form>
-    <form id="phoneSetupVerifyForm" class="hidden">
-      <div class="field"><label for="setupOtp">رمز التحقق برسالة SMS</label><input id="setupOtp" inputmode="numeric" autocomplete="one-time-code" required minlength="4" maxlength="8" placeholder="أدخل الرمز"></div>
-      <button id="setupVerifyBtn" type="submit">تأكيد رقم الجوال</button>
-    </form>
-    <div id="phoneSetupMessage" class="notice hidden" role="status"></div>
-  </section>
   <section id="scannerPanel" class="panel hidden" style="margin-bottom:12px">
     <h3>استقبال الزوار ومسح QR</h3>
     <p class="muted">امسح رمز الحجز عند وصول الزائر لتسجيل حضوره. لا يمكن استخدام الرمز نفسه مرتين.</p>
@@ -175,17 +162,6 @@ function normalizeSaudiPhone(raw){
  if(!/^9665\d{8}$/.test(digits))throw new Error('أدخل رقم جوال سعودي صحيحًا مثل 05xxxxxxxx.');
  return '+'+digits;
 }
-let pendingLoginPhone=null,pendingSetupPhone=null;
-async function sendLoginOtp(){
- hideMessage('loginMessage');
- try{
-  const phone=normalizeSaudiPhone($('loginPhone').value);
-  const {error}=await supabase.auth.signInWithOtp({phone,options:{shouldCreateUser:false}});
-  if(error)throw error;
-  pendingLoginPhone=phone;$('verifyOtpForm').classList.remove('hidden');
-  message('loginMessage','أرسلنا رمز التحقق إلى '+phone+'. أدخل الرمز لإكمال الدخول.','ok');
- }catch(err){message('loginMessage',err.message||'تعذر إرسال رمز التحقق.','error')}
-}
 $('phonePasswordLoginForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=$('phonePasswordLoginBtn');btn.disabled=true;btn.textContent='جارٍ تسجيل الدخول…';hideMessage('loginMessage');
  try{
@@ -200,29 +176,6 @@ $('phonePasswordLoginForm').addEventListener('submit',async e=>{
   await loadSession();
  }catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تحقق من رقم الجوال وكلمة المرور.','error')}
  finally{btn.disabled=false;btn.textContent='دخول إلى النظام'}
-});
-$('phoneSetupForm').addEventListener('submit',async e=>{
- e.preventDefault();const btn=$('setupSendBtn');btn.disabled=true;btn.textContent='جارٍ إرسال الرمز…';hideMessage('phoneSetupMessage');
- try{
-  pendingSetupPhone=normalizeSaudiPhone($('setupPhone').value);
-  const {error}=await supabase.auth.updateUser({phone:pendingSetupPhone});
-  if(error)throw error;
-  $('phoneSetupVerifyForm').classList.remove('hidden');
-  message('phoneSetupMessage','أرسلنا رمز التفعيل إلى '+pendingSetupPhone+'.','ok');
- }catch(err){message('phoneSetupMessage',err.message||'تعذر إرسال رمز التفعيل.','error')}
- finally{btn.disabled=false;btn.textContent='إرسال رمز التفعيل'}
-});
-$('phoneSetupVerifyForm').addEventListener('submit',async e=>{
- e.preventDefault();const btn=$('setupVerifyBtn');btn.disabled=true;btn.textContent='جارٍ تأكيد الرقم…';hideMessage('phoneSetupMessage');
- try{
-  if(!pendingSetupPhone)throw new Error('أدخل رقم الجوال واطلب رمز التفعيل أولًا.');
-  const {error}=await supabase.auth.verifyOtp({phone:pendingSetupPhone,token:$('setupOtp').value.trim(),type:'phone_change'});
-  if(error)throw error;
-  message('phoneSetupMessage','تم توثيق رقم الجوال. سجّل الخروج ثم ادخل برقم الجوال ورمز SMS.','ok');
-  const {data:{user}}=await supabase.auth.getUser();sessionUser=user;
-  $('phoneSetupPanel').classList.add('hidden');
- }catch(err){message('phoneSetupMessage',err.message||'تعذر تأكيد رقم الجوال.','error')}
- finally{btn.disabled=false;btn.textContent='تأكيد رقم الجوال'}
 });
 async function loadSession(){
  const {data:{session},error}=await supabase.auth.getSession();if(error)throw error;
