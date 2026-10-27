@@ -272,59 +272,48 @@ function normalizeSaudiPhone(raw){
  if(!/^9665\d{8}$/.test(digits))throw new Error('أدخل رقم جوال سعودي صحيحًا مثل 05xxxxxxxx.');
  return '+'+digits;
 }
-$('phonePasswordLoginForm').addEventListener('submit',async e=>{
- e.preventDefault();const btn=$('phonePasswordLoginBtn');btn.disabled=true;btn.textContent='جارٍ تسجيل الدخول…';hideMessage('loginMessage');
- try{
-  const phone=normalizeSaudiPhone($('loginPhone').value);
-  const password=$('phonePassword').value;
-  // Supervisor signs in with the existing email account using their registered phone as the login identifier; no SMS required.
-  const credentials=phone==='+966579820107'
-   ? {email:'rayyanhatif@gmail.com',password}
-   : {phone,password};
-  const {error}=await supabase.auth.signInWithPassword(credentials);
-  if(error)throw error;
-  await loadSession();
- }catch($('unifiedLoginForm').addEventListener('submit',async e=>{
+$('unifiedLoginForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=$('unifiedLoginBtn');btn.disabled=true;btn.textContent='جارٍ الدخول…';hideMessage('loginMessage');
  try{
-  const identifier=$('loginIdentifier').value.trim();
-  const password=$('unifiedPassword').value;
+  const identifier=$('loginIdentifier').value.trim(),password=$('unifiedPassword').value;
   let credentials;
-  if(identifier.includes('@')){
-   credentials={email:identifier,password};
-  }else{
-   const phone=normalizeSaudiPhone(identifier);
-   credentials=phone==='+966579820107'
-    ? {email:'rayyanhatif@gmail.com',password}
-    : {phone,password};
-  }
+  if(identifier.includes('@')) credentials={email:identifier,password};
+  else {const phone=normalizeSaudiPhone(identifier);credentials=phone==='+966579820107'?{email:'rayyanhatif@gmail.com',password}:{phone,password};}
   const {error}=await supabase.auth.signInWithPassword(credentials);
   if(error)throw error;
   await loadSession();
  }catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تحقق من رقم الجوال أو البريد وكلمة المرور.','error')}
  finally{btn.disabled=false;btn.textContent='دخول إلى النظام'}
 });
-حفظ الحجز…';try{
- if(!['booking_employee','supervisor'].includes(employee.role))throw new Error('صلاحيتك الحالية لا تسمح بإنشاء الحجوزات.');
- const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),date=$('visitDate').value,count=Number($('partySize').value),result=priceFor(date,count);
- if(!name||!date||!Number.isInteger(count)||count<1||count>100)throw new Error('تأكد من اسم الزائر وتاريخ الزيارة وعدد الأشخاص.');
- if(!result)throw new Error('لا توجد تسعيرة فعالة لهذا اليوم. راجع المشرف.');
- const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value.trim()||null,party_size:count,amount_due:result.amount,amount_paid:0,price_rule_snapshot:{rule_name:result.rule.rule_name,base_price:Number(result.rule.base_price),included_people:Number(result.rule.included_people),extra_person_price:Number(result.rule.extra_person_price),party_size:count,amount_due:result.amount,currency:'SAR'},payment_status:'unpaid',booking_status:'pending',created_by:employee.id}).select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due').single();
- if(error)throw error;
- const token=randomToken(),tokenHash=await sha256(token);
- const {error:qrError}=await supabase.rpc('hadeeqah_assign_qr_token',{p_booking_id:booking.id,p_token_hash:tokenHash});
- $('bookingForm').reset();$('visitDate').value=localDateISO();$('partySize').value='2';refreshPrice();
- if(qrError){message('appMessage','تم حفظ الحجز رقم '+booking.booking_number+' لكن تعذر إصدار QR: '+qrError.message,'error');await loadBookings();return;}
- await showQr(booking,token);message('appMessage','تم حفظ الحجز وإصدار رمز QR بنجاح. الدفع الإلكتروني غير مربوط حاليًا.','ok');await loadBookings();
- }catch(err){message('appMessage',err.message||'تعذر حفظ الحجز.','error')}finally{btn.disabled=false;btn.textContent='حفظ الحجز'}});
+
+$('bookingForm').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=$('createBookingBtn');btn.disabled=true;btn.textContent='جارٍ حفظ الحجز…';
+ try{
+  if(!['booking_employee','supervisor'].includes(employee?.role))throw new Error('صلاحيتك الحالية لا تسمح بإنشاء الحجوزات.');
+  const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),date=$('visitDate').value,count=Number($('partySize').value),result=priceFor(date,count);
+  if(!name||!date||!Number.isInteger(count)||count<1||count>100)throw new Error('تأكد من اسم الزائر وتاريخ الزيارة وعدد الأشخاص.');
+  if(!result)throw new Error('لا توجد تسعيرة فعالة لهذا اليوم. راجع المشرف.');
+  const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value.trim()||null,party_size:count,amount_due:result.amount,amount_paid:0,price_rule_snapshot:{rule_name:result.rule.rule_name,base_price:Number(result.rule.base_price),included_people:Number(result.rule.included_people),extra_person_price:Number(result.rule.extra_person_price),party_size:count,amount_due:result.amount,currency:'SAR'},payment_status:'unpaid',booking_status:'pending',created_by:employee.id}).select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due').single();
+  if(error)throw error;
+  const token=randomToken(),tokenHash=await sha256(token);
+  const {error:qrError}=await supabase.rpc('hadeeqah_assign_qr_token',{p_booking_id:booking.id,p_token_hash:tokenHash});
+  $('bookingForm').reset();$('visitDate').value=localDateISO();$('partySize').value='2';refreshPrice();
+  await loadBookings();
+  if(['reception','supervisor'].includes(employee.role))await loadTodayBookings();
+  if(employee.role==='supervisor'){await loadReports();await loadAuditLogs();}
+  if(qrError){message('appMessage','تم حفظ الحجز رقم '+booking.booking_number+' لكن تعذر إصدار QR: '+qrError.message,'error');return;}
+  await showQr(booking,token);message('appMessage','تم حفظ الحجز وإصدار رمز QR بنجاح. الدفع الإلكتروني غير مربوط حاليًا.','ok');
+ }catch(err){message('appMessage',err.message||'تعذر حفظ الحجز.','error')}
+ finally{btn.disabled=false;btn.textContent='حفظ الحجز'}
+});
 
 function randomToken(){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
 async function sha256(value){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')}
 async function drawQrTicket(booking){
  const qrCanvas=$('qrCanvas'),ticket=$('qrTicketCanvas'),ctx=ticket.getContext('2d');
  const width=720,pad=36,qrSize=360;
- ticket.width=width;ticket.height=760;
- ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,760);
+ ticket.width=width;ticket.height=850;
+ ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,850);
  ctx.fillStyle='#005c45';ctx.fillRect(0,0,width,150);
  ctx.textAlign='center';ctx.direction='rtl';ctx.fillStyle='#ffffff';
  ctx.font='bold 38px Tahoma,Arial,sans-serif';ctx.fillText('مرحبًا بك في حديقة طيور الريان',width/2,64);
@@ -334,8 +323,8 @@ async function drawQrTicket(booking){
  const x=(width-qrSize)/2,y=285;
  ctx.fillStyle='#ffffff';ctx.fillRect(x-14,y-14,qrSize+28,qrSize+28);
  ctx.drawImage(qrCanvas,x,y,qrSize,qrSize);
- ctx.fillStyle='#005c45';ctx.fillRect(pad,690,width-pad*2,3);
- ctx.fillStyle='#333333';ctx.font='20px Tahoma,Arial,sans-serif';ctx.fillText('أبرز هذا الرمز عند الوصول',width/2,730);
+ ctx.fillStyle='#171717';ctx.font='22px Tahoma,Arial,sans-serif';ctx.fillText('تاريخ الزيارة: '+String(booking.visit_date||'غير محدد'),width/2,690);ctx.fillText('وقت الزيارة: '+String(booking.visit_time||'غير محدد'),width/2,730);ctx.fillText('عدد الأشخاص: '+String(booking.party_size||'—'),width/2,770);ctx.fillStyle='#005c45';ctx.fillRect(pad,800,width-pad*2,3);
+ ctx.fillStyle='#333333';ctx.font='20px Tahoma,Arial,sans-serif';ctx.fillText('أبرز هذا الرمز عند الوصول',width/2,830);
 }
 async function showQr(booking,token){activeQrBooking=booking;const qr=await getQRCode();const payload=JSON.stringify({type:'hadeeqah-booking',bookingId:booking.id,token});await qr.toCanvas($('qrCanvas'),payload,{width:300,margin:2,errorCorrectionLevel:'H',color:{dark:'#121212',light:'#ffffff'}});$('qrCustomer').textContent=booking.customer_name;$('qrBookingNo').textContent='رقم الحجز: '+booking.booking_number;await drawQrTicket(booking);$('qrPanel').classList.remove('hidden');document.body.style.overflow='hidden';$('closeQrBtn').focus()}
 function closeQrModal(){$('qrPanel').classList.add('hidden');document.body.style.overflow='';activeQrBooking=null}
@@ -379,7 +368,7 @@ $('saveQrBtn').addEventListener('click',async()=>{const btn=$('saveQrBtn');const
 async function stopScanner(){scanActive=false;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}$('scanVideo').srcObject=null;$('scanVideo').classList.add('hidden')}
 $('stopScanBtn').addEventListener('click',stopScanner);
 $('startScanBtn').addEventListener('click',async()=>{hideMessage('scanMessage');if(!['reception','supervisor'].includes(employee?.role)){message('scanMessage','هذه الصفحة مخصصة للاستقبال والمشرف.','error');return}try{await stopScanner();scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});const video=$('scanVideo');video.srcObject=scanStream;video.classList.remove('hidden');await video.play();scanActive=true;const canvas=$('scanCanvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});const tick=async()=>{if(!scanActive)return;if(video.readyState>=2){canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.drawImage(video,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);const decode=await getJsQR();const code=decode(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'});if(code?.data){scanActive=false;await stopScanner();await processScannedQr(code.data);return}}requestAnimationFrame(tick)};requestAnimationFrame(tick)}catch(err){message('scanMessage','تعذر تشغيل الكاميرا. تأكد من السماح باستخدام الكاميرا وفتح الموقع عبر HTTPS. '+(err.message||''),'error')}});
-async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type!=='hadeeqah-booking'||!data.bookingId||!data.token)throw new Error('هذا ليس رمز حجز صالحًا.');const {data:before,error:beforeError}=await supabase.from('hadeeqah_bookings').select('booking_number,customer_name,party_size,amount_due,amount_paid,payment_status,booking_status,visit_date,visit_time').eq('id',data.bookingId).eq('company_id',company.id).maybeSingle();if(beforeError)throw beforeError;if(!before)throw new Error('الحجز غير موجود في شركتك.');const tokenHash=await sha256(data.token);const {data:checked,error}=await supabase.rpc('hadeeqah_checkin',{p_booking_id:data.bookingId,p_token_hash:tokenHash});if(error)throw error;const item=Array.isArray(checked)?checked[0]:checked;if(!item)throw new Error('لم يتم العثور على الحجز.');const remaining=Math.max(0,Number(before.amount_due||0)-Number(before.amount_paid||0));const paymentNote=remaining>0?' — تنبيه: متبقي '+money(remaining)+' غير مسدد. يرجى تحصيله نقدًا من موظف الحجوزات أو المشرف.':' — السداد مكتمل';message('scanMessage','تم تسجيل وصول الزائر بنجاح! الزائر: '+item.customer_name+' — رقم الحجز: '+item.booking_number+' — عدد الأشخاص: '+item.party_size+paymentNote,'ok');await loadBookings();await loadTodayBookings()}catch(err){message('scanMessage',err.message||'تعذر التحقق من الرمز.','error')}}
+async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type!=='hadeeqah-booking'||!data.bookingId||!data.token)throw new Error('هذا ليس رمز حجز صالحًا.');const {data:before,error:beforeError}=await supabase.from('hadeeqah_bookings').select('booking_number,customer_name,party_size,amount_due,amount_paid,payment_status,booking_status,visit_date,visit_time').eq('id',data.bookingId).eq('company_id',company.id).maybeSingle();if(beforeError)throw beforeError;if(!before)throw new Error('الحجز غير موجود في شركتك.');const tokenHash=await sha256(data.token);const {data:checked,error}=await supabase.rpc('hadeeqah_checkin',{p_booking_id:data.bookingId,p_token_hash:tokenHash});if(error){const msg=error.message||'';if(/استُخدم سابقًا|سبق|غير صحيح|ملغي/.test(msg))throw new Error('سبق استخدام الباركود أو انتهت صلاحيته أو أن الحجز ملغي. اطلب بطاقة QR جديدة من موظف الحجوزات.');throw error}const item=Array.isArray(checked)?checked[0]:checked;if(!item)throw new Error('لم يتم العثور على الحجز.');const remaining=Math.max(0,Number(before.amount_due||0)-Number(before.amount_paid||0));const paymentNote=remaining>0?' — تنبيه: متبقي '+money(remaining)+' غير مسدد. يرجى تحصيله نقدًا من موظف الحجوزات أو المشرف.':' — السداد مكتمل';message('scanMessage','تم تسجيل وصول الزائر بنجاح! الزائر: '+item.customer_name+' — رقم الحجز: '+item.booking_number+' — عدد الأشخاص: '+item.party_size+paymentNote,'ok');await loadBookings();await loadTodayBookings()}catch(err){message('scanMessage',err.message||'تعذر التحقق من الرمز.','error')}}
 
 $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs()}message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
