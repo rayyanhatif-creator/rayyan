@@ -53,7 +53,7 @@
   <div id="appMessage" class="notice hidden" role="status"></div>
   <section id="phoneSetupPanel" class="panel hidden" style="margin-bottom:12px">
     <h3>تفعيل الدخول برقم الجوال</h3>
-    <p class="muted">حسابك الحالي يحتاج توثيق رقم جوال مرة واحدة قبل أن تتمكن من استخدام تسجيل الدخول عبر SMS.</p>
+    <p class="muted">إعداد اختياري لربط رقم الجوال بالحساب. تسجيل الدخول للمشرف يتم برقم الجوال وكلمة المرور دون SMS.</p>
     <form id="phoneSetupForm">
       <div class="field"><label for="setupPhone">رقم جوالك السعودي</label><input id="setupPhone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="20" placeholder="05xxxxxxxx"></div>
       <button id="setupSendBtn" type="submit">إرسال رمز التفعيل</button>
@@ -129,7 +129,7 @@
       </div>
       <button id="addEmployeeBtn" type="submit">إضافة الموظف</button>
     </form>
-    <div class="notice">تنبيه: يجب إنشاء حساب الموظف في Supabase Auth باستخدام رقم جواله وتأكيده برسالة SMS أولًا. بعد ذلك اربطه هنا وحدد صلاحياته. هذه الشاشة لا تنشئ حساب Auth جديدًا.</div>
+    <div class="notice">تنبيه: يجب أن يكون للموظف حساب دخول موجود في Supabase Auth وكلمة مرور معدّة مسبقًا قبل ربطه هنا. هذه الشاشة لا تنشئ حساب Auth جديدًا.</div>
     <div class="table-wrap" style="margin-top:12px"><table style="min-width:650px"><thead><tr><th>الاسم</th><th>رقم الجوال</th><th>الدور</th><th>رمز الموظف</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="employeeRows"><tr><td colspan="6" class="empty">جارٍ تحميل الموظفين…</td></tr></tbody></table></div>
   </section>
 
@@ -190,7 +190,12 @@ $('phonePasswordLoginForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=$('phonePasswordLoginBtn');btn.disabled=true;btn.textContent='جارٍ تسجيل الدخول…';hideMessage('loginMessage');
  try{
   const phone=normalizeSaudiPhone($('loginPhone').value);
-  const {error}=await supabase.auth.signInWithPassword({phone,password:$('phonePassword').value});
+  const password=$('phonePassword').value;
+  // Supervisor signs in with the existing email account using their registered phone as the login identifier; no SMS required.
+  const credentials=phone==='+966579820107'
+   ? {email:'rayyanhatif@gmail.com',password}
+   : {phone,password};
+  const {error}=await supabase.auth.signInWithPassword(credentials);
   if(error)throw error;
   await loadSession();
  }catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تحقق من رقم الجوال وكلمة المرور.','error')}
