@@ -386,7 +386,7 @@ async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type
 
 $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs()}message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
-supabase.auth.onAuthStateChange((_event,session)=>{if(!session){sessionUser=null;employee=null;company=null;showLogin()}});
+supabase.auth.onAuthStateChange((event,session)=>{if(session)return;if(event==='SIGNED_OUT'){sessionUser=null;employee=null;company=null;showLogin()}});
 try{await loadSession();if(sessionUser&&employee)restoreDashboardPosition()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}
 </script>
 </body>
