@@ -53,7 +53,7 @@
     <div id="todayBookingsInline" style="margin-top:16px">
       <h3>حجوزات اليوم</h3>
       <p class="muted" id="todayBookingsLabelInline">الحجوزات المجدولة اليوم تظهر هنا تلقائيًا.</p>
-      <div class="table-wrap"><table><thead><tr><th>رقم الحجز</th><th>الزائر</th><th>الوقت</th><th>الأشخاص</th><th>السداد</th><th>الحالة</th></tr></thead><tbody id="todayBookingRowsInline"><tr><td colspan="6" class="empty">جارٍ تحميل حجوزات اليوم…</td></tr></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>رقم الحجز</th><th>الزائر</th><th>الوقت</th><th>الأشخاص</th><th>المبلغ</th><th>السداد</th><th>الحالة</th></tr></thead><tbody id="todayBookingRowsInline"><tr><td colspan="7" class="empty">جارٍ تحميل حجوزات اليوم…</td></tr></tbody></table></div>
     </div>
   </section>
   <section class="stats">
@@ -205,10 +205,10 @@ async function loadTodayBookings(){
  $('todayBookingsLabelInline').textContent='تاريخ اليوم: '+today+' — الحجوزات حسب موعد الزيارة.';
  const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status,booking_status').eq('company_id',company.id).eq('visit_date',today).order('visit_time',{ascending:true}).limit(200);
  if(error)throw error;
- if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='ما فيه حجوزات مجدولة لليوم.';tr.append(td);body.append(tr);return}
+ if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.className='empty';td.textContent='ما فيه حجوزات مجدولة لليوم.';tr.append(td);body.append(tr);return}
  for(const b of rows){
   const tr=document.createElement('tr');
-  const vals=['#'+b.booking_number,b.customer_name||'—',b.visit_time||'—',(b.party_size||0)+' أشخاص',b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':'غير مسدد',b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':b.booking_status==='confirmed'?'مؤكد':'قيد الانتظار'];
+  const vals=['#'+b.booking_number,b.customer_name||'—',b.visit_time||'—',(b.party_size||0)+' أشخاص',money(b.amount_due),b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':'غير مسدد',b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':b.booking_status==='confirmed'?'مؤكد':'قيد الانتظار'];
   for(const v of vals){const td=document.createElement('td');td.textContent=v;tr.append(td)}
   body.append(tr)
  }
