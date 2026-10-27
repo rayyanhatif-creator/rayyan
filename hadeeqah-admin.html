@@ -136,7 +136,12 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_mwiKjxLYtMCXwZ_ZdC7TLA_6Gz4GbiD
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage } });
 let sessionUser=null, employee=null, company=null, pricing=[], scanStream=null, scanActive=false, activeQrBooking=null, employeeDirectory=[];
 const $=id=>document.getElementById(id);
-function showLogin(){ $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); }\n// Keep the dashboard position when the page is refreshed.\nfunction saveDashboardPosition(){try{sessionStorage.setItem('hadeeqah-dashboard-scroll',String(window.scrollY||0));}catch(_){}}\nwindow.addEventListener('pagehide',saveDashboardPosition);\nwindow.addEventListener('beforeunload',saveDashboardPosition);\nfunction restoreDashboardPosition(){try{const saved=sessionStorage.getItem('hadeeqah-dashboard-scroll');if(saved!==null){const y=Number(saved);requestAnimationFrame(()=>window.scrollTo(0,Number.isFinite(y)?y:0));}}catch(_){}}
+function showLogin(){ $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); }
+// Keep the dashboard position when the page is refreshed.
+function saveDashboardPosition(){try{sessionStorage.setItem('hadeeqah-dashboard-scroll',String(window.scrollY||0));}catch(_){}}
+window.addEventListener('pagehide',saveDashboardPosition);
+window.addEventListener('beforeunload',saveDashboardPosition);
+function restoreDashboardPosition(){try{const saved=sessionStorage.getItem('hadeeqah-dashboard-scroll');if(saved!==null){const y=Number(saved);requestAnimationFrame(()=>window.scrollTo(0,Number.isFinite(y)?y:0));}}catch(_){}}
 async function loadSession(){
  const {data:{session},error:sessionError}=await supabase.auth.getSession();
  if(sessionError) throw sessionError;
