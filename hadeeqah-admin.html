@@ -133,10 +133,10 @@ async function getQRCode(){if(!QRCode){const mod=await import('https://cdn.jsdel
 async function getJsQR(){if(!jsQR){const mod=await import('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm');jsQR=mod.default;}return jsQR;}
 const SUPABASE_URL = 'https://daqtkhhlqlkpypffecel.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_mwiKjxLYtMCXwZ_ZdC7TLA_6Gz4GbiD';
-const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage } });
 let sessionUser=null, employee=null, company=null, pricing=[], scanStream=null, scanActive=false, activeQrBooking=null, employeeDirectory=[];
 const $=id=>document.getElementById(id);
-function showLogin(){ $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); }
+function showLogin(){ $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); }\n// Keep the dashboard position when the page is refreshed.\nfunction saveDashboardPosition(){try{sessionStorage.setItem('hadeeqah-dashboard-scroll',String(window.scrollY||0));}catch(_){}}\nwindow.addEventListener('pagehide',saveDashboardPosition);\nwindow.addEventListener('beforeunload',saveDashboardPosition);\nfunction restoreDashboardPosition(){try{const saved=sessionStorage.getItem('hadeeqah-dashboard-scroll');if(saved!==null){const y=Number(saved);requestAnimationFrame(()=>window.scrollTo(0,Number.isFinite(y)?y:0));}}catch(_){}}
 async function loadSession(){
  const {data:{session},error:sessionError}=await supabase.auth.getSession();
  if(sessionError) throw sessionError;
@@ -382,7 +382,7 @@ async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type
 $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs()}message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((_event,session)=>{if(!session){sessionUser=null;employee=null;company=null;showLogin()}});
-try{await loadSession()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}
+try{await loadSession();if(sessionUser&&employee)restoreDashboardPosition()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}
 </script>
 </body>
 </html>
