@@ -152,6 +152,11 @@ async function loadSession(){
  if(!company) throw new Error('تعذر العثور على الشركة المرتبطة بالحساب.');
  $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
  $('roleBadge').textContent=employee.role==='supervisor'?'مشرف':employee.role==='reception'?'مسؤول استقبال ومسح QR':'موظف حجوزات';
+ $('scannerPanel').classList.toggle('hidden',!['reception','supervisor'].includes(employee.role));
+ $('bookingPanel').classList.toggle('hidden',!['booking_employee','supervisor'].includes(employee.role));
+ $('reportsPanel').classList.toggle('hidden',employee.role!=='supervisor');
+ $('auditPanel').classList.toggle('hidden',employee.role!=='supervisor');
+ $('employeePanel').classList.toggle('hidden',employee.role!=='supervisor');
  try{await loadBookings();}catch(err){message('appMessage',err.message||'تعذر تحميل الحجوزات.','error');}
  if(['reception','supervisor'].includes(employee.role)&&typeof loadTodayBookings==='function') await loadTodayBookings();
  if(employee.role==='supervisor'){
