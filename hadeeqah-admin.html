@@ -64,9 +64,25 @@
     <section class="panel">
       <h3>أحدث الحجوزات</h3>
       <div class="table-wrap"><table><thead><tr><th>رقم الحجز</th><th>الزائر</th><th>موعد الزيارة</th><th>الأشخاص</th><th>المبلغ</th><th>السداد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="bookingRows"><tr><td colspan="7" class="empty">جارٍ تحميل الحجوزات…</td></tr></tbody></table></div>
-      <p class="muted">يمكن إصدار QR للحجز بعد حفظه. الدفع الإلكتروني ورسائل واتساب مؤجلان للمستقبل.</p>
+      <p class="muted">يمكن إصدار QR للحجز بعد حفظه. السداد النقدي وإدارة الحجوزات من هنا. الدفع الإلكتروني مؤجل ولا يوجد ربط مع Tap.</p>
     </section>
   </div>
+
+  <section id="employeePanel" class="panel hidden" style="margin-top:16px">
+    <h3>إدارة الموظفين والصلاحيات</h3>
+    <p class="muted">أضف حسابًا موجودًا في النظام وحدد دوره، أو عدّل صلاحيات الموظفين الحاليين. لا تشارك كلمات المرور.</p>
+    <form id="employeeForm">
+      <div class="columns" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">
+        <div class="field"><label for="employeeName">اسم الموظف</label><input id="employeeName" required maxlength="120" placeholder="اسم الموظف"></div>
+        <div class="field"><label for="employeeEmail">البريد الإلكتروني للحساب</label><input id="employeeEmail" required type="email" placeholder="staff@example.com"></div>
+        <div class="field"><label for="employeeRole">الصلاحية</label><select id="employeeRole" required><option value="booking_employee">موظف حجوزات</option><option value="reception">مسؤول استقبال ومسح QR</option></select></div>
+        <div class="field"><label for="employeeCode">رمز الموظف (اختياري)</label><input id="employeeCode" maxlength="40" placeholder="مثال: EMP-02"></div>
+      </div>
+      <button id="addEmployeeBtn" type="submit">إضافة الموظف</button>
+    </form>
+    <div class="notice">تنبيه: يجب أن يكون للموظف حساب دخول موجود مسبقًا بنفس البريد الإلكتروني. هذه الشاشة تربط الحساب بالشركة وتحدد صلاحياته، ولا تنشئ كلمة مرور.</div>
+    <div class="table-wrap" style="margin-top:12px"><table style="min-width:650px"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>رمز الموظف</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="employeeRows"><tr><td colspan="6" class="empty">جارٍ تحميل الموظفين…</td></tr></tbody></table></div>
+  </section>
   <section id="scannerPanel" class="panel hidden" style="margin-top:16px">
     <h3>استقبال الزوار ومسح QR</h3>
     <p class="muted">امسح رمز الحجز عند وصول الزائر لتسجيل حضوره. لا يمكن استخدام الرمز نفسه مرتين.</p>
@@ -118,19 +134,62 @@ async function loadSession(){
  company=co;
  const {data:rules,error:ruleErr}=await supabase.from('hadeeqah_pricing_rules').select('id,rule_name,days_of_week,included_people,base_price,extra_person_price,is_active').eq('company_id',company.id).eq('is_active',true);
  if(ruleErr)throw ruleErr;pricing=rules||[];
- $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');$('roleBadge').textContent=emp.role==='supervisor'?'مشرف النظام':emp.role==='reception'?'مسؤول الاستقبال':'موظف الحجوزات';$('bookingPanel').classList.toggle('hidden',!['booking_employee','supervisor'].includes(emp.role));$('scannerPanel').classList.toggle('hidden',!['reception','supervisor'].includes(emp.role));
- await loadBookings();refreshPrice();
+ $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');$('roleBadge').textContent=emp.role==='supervisor'?'مشرف النظام':emp.role==='reception'?'مسؤول الاستقبال':'موظف الحجوزات';$('bookingPanel').classList.toggle('hidden',!['booking_employee','supervisor'].includes(emp.role));$('scannerPanel').classList.toggle('hidden',!['reception','supervisor'].includes(emp.role));$('employeePanel').classList.toggle('hidden',emp.role!=='supervisor');
+ await loadBookings();if(emp.role==='supervisor')await loadEmployees();refreshPrice();
 }
 function showLogin(){$('appView').classList.add('hidden');$('loginView').classList.remove('hidden')}
+
+const roleLabel=role=>role==='supervisor'?'مشرف':role==='reception'?'مسؤول استقبال':'موظف حجوزات';
+async function loadEmployees(){
+ const {data:rows,error}=await supabase.rpc('hadeeqah_list_employees');
+ if(error)throw error;
+ const body=$('employeeRows');body.replaceChildren();
+ if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='لا يوجد موظفون.';tr.append(td);body.append(tr);return}
+ for(const e of rows){
+  const tr=document.createElement('tr');
+  for(const v of [e.display_name,e.email||'—',roleLabel(e.role),e.employee_code||'—',e.is_active?'نشط':'موقوف']){
+   const td=document.createElement('td');td.textContent=v;tr.append(td)
+  }
+  const td=document.createElement('td');
+  const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='تعديل';edit.style.padding='7px 10px';edit.style.fontSize='12px';
+  edit.addEventListener('click',async()=>{
+   const name=prompt('اسم الموظف',e.display_name);if(name===null)return;
+   const role=prompt('اكتب الدور بالضبط: booking_employee أو reception أو supervisor',e.role);if(role===null)return;
+   if(!['booking_employee','reception','supervisor'].includes(role.trim())){message('appMessage','الدور غير صحيح. استخدم booking_employee أو reception أو supervisor.','error');return}
+   const code=prompt('رمز الموظف (اختياري)',e.employee_code||'');if(code===null)return;
+   const active=e.is_current_user?true:confirm(e.is_active?'اضغط موافق لإبقاء الموظف نشطًا، أو إلغاء لإيقافه.\n\nالحالة الحالية: نشط':'اضغط موافق لتفعيل الموظف، أو إلغاء لإبقائه موقوفًا.');
+   let nextActive=active;
+   if(!e.is_current_user&&e.is_active){nextActive=confirm('هل تريد إبقاء '+e.display_name+' نشطًا؟ اضغط إلغاء لإيقاف الحساب.')}
+   edit.disabled=true;
+   try{
+    const {error:updateError}=await supabase.rpc('hadeeqah_update_employee',{p_employee_id:e.employee_id,p_display_name:name.trim(),p_role:role.trim(),p_is_active:nextActive,p_employee_code:code.trim()||null});
+    if(updateError)throw updateError;
+    await loadEmployees();message('appMessage','تم تحديث بيانات وصلاحيات الموظف.','ok')
+   }catch(err){message('appMessage',err.message||'تعذر تعديل الموظف.','error')}
+   finally{edit.disabled=false}
+  });
+  td.append(edit);tr.append(td);body.append(tr)
+ }
+}
+$('employeeForm').addEventListener('submit',async ev=>{
+ ev.preventDefault();const btn=$('addEmployeeBtn');btn.disabled=true;btn.textContent='جارٍ إضافة الموظف…';
+ try{
+  const {error}=await supabase.rpc('hadeeqah_add_employee_profile',{p_email:$('employeeEmail').value.trim(),p_display_name:$('employeeName').value.trim(),p_role:$('employeeRole').value,p_employee_code:$('employeeCode').value.trim()||null});
+  if(error)throw error;
+  $('employeeForm').reset();await loadEmployees();message('appMessage','تمت إضافة الموظف وربط حسابه بالشركة.','ok')
+ }catch(err){message('appMessage',err.message||'تعذرت إضافة الموظف.','error')}
+ finally{btn.disabled=false;btn.textContent='إضافة الموظف'}
+});
+
 async function loadBookings(){
  hideMessage('appMessage');
- const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status,booking_status,tap_invoice_url,created_at').eq('company_id',company.id).order('created_at',{ascending:false}).limit(100);
+ const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status,booking_status,created_at').eq('company_id',company.id).order('created_at',{ascending:false}).limit(100);
  if(error)throw error;
  $('totalBookings').textContent=rows.length;$('unpaidBookings').textContent=rows.filter(x=>x.payment_status!=='paid').length;
  $('totalRevenue').textContent=money(rows.reduce((sum,x)=>sum+Number(x.amount_paid||0),0));
  $('bookingRows').replaceChildren();
  if(!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=8;td.className='empty';td.textContent='لا توجد حجوزات حتى الآن.';tr.append(td);$('bookingRows').append(tr);return}
- for(const b of rows){const tr=document.createElement('tr');const vals=['#'+b.booking_number,b.customer_name,[b.visit_date,b.visit_time].filter(Boolean).join(' · '),b.party_size+' أشخاص',money(b.amount_due),b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':b.payment_status==='pending'?'بانتظار الدفع':b.payment_status==='failed'?'فشل الدفع':'غير مسدد',b.booking_status==='confirmed'?'مؤكد':b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':'قيد الانتظار'];for(const v of vals){const td=document.createElement('td');td.textContent=v;tr.append(td)}const actionTd=document.createElement('td');actionTd.style.display='flex';actionTd.style.flexWrap='wrap';actionTd.style.gap='6px';const canManage=['booking_employee','supervisor'].includes(employee.role);if(canManage&&!['arrived','cancelled'].includes(b.booking_status)){const qrBtn=document.createElement('button');qrBtn.type='button';qrBtn.textContent='إعادة QR';qrBtn.className='secondary';qrBtn.style.padding='7px 10px';qrBtn.style.fontSize='12px';qrBtn.addEventListener('click',async()=>{qrBtn.disabled=true;try{const token=randomToken(),tokenHash=await sha256(token);const {error:rotateError}=await supabase.rpc('hadeeqah_rotate_qr_token',{p_booking_id:b.id,p_token_hash:tokenHash});if(rotateError)throw rotateError;await showQr(b,token);message('appMessage','تم إصدار رمز QR جديد للحجز رقم '+b.booking_number+'. الرمز السابق لم يعد صالحًا.','ok')}catch(err){message('appMessage',err.message||'تعذر إصدار رمز جديد.','error')}finally{qrBtn.disabled=false}});actionTd.append(qrBtn)}const remaining=Number(b.amount_due||0)-Number(b.amount_paid||0);if(canManage&&remaining>0&&b.booking_status!=='cancelled'){const tapBtn=document.createElement('button');tapBtn.type='button';tapBtn.textContent=b.tap_invoice_url?'تحديث رابط Tap':'ربط رابط Tap';tapBtn.className='secondary';tapBtn.style.padding='7px 10px';tapBtn.style.fontSize='12px';tapBtn.addEventListener('click',async()=>{const raw=prompt('الصق رابط الدفع الذي أنشأته من لوحة Tap',b.tap_invoice_url||'');if(raw===null)return;tapBtn.disabled=true;try{const {error:tapError}=await supabase.rpc('hadeeqah_set_tap_link',{p_booking_id:b.id,p_url:raw.trim()});if(tapError)throw tapError;await loadBookings();message('appMessage','تم ربط رابط الدفع من Tap بالحجز رقم '+b.booking_number+'.','ok')}catch(err){message('appMessage',err.message||'تعذر حفظ رابط Tap.','error')}finally{tapBtn.disabled=false}});actionTd.append(tapBtn);if(b.tap_invoice_url){const openTapBtn=document.createElement('button');openTapBtn.type='button';openTapBtn.textContent='فتح Tap';openTapBtn.className='secondary';openTapBtn.style.padding='7px 10px';openTapBtn.style.fontSize='12px';openTapBtn.addEventListener('click',()=>window.open(b.tap_invoice_url,'_blank','noopener,noreferrer'));actionTd.append(openTapBtn);const phoneDigits=String(b.customer_phone||'').replace(/\D/g,'');const waPhone=phoneDigits.startsWith('0')?'966'+phoneDigits.slice(1):phoneDigits.startsWith('5')?'966'+phoneDigits:phoneDigits;if(waPhone){const waBtn=document.createElement('button');waBtn.type='button';waBtn.textContent='واتساب الدفع';waBtn.className='secondary';waBtn.style.padding='7px 10px';waBtn.style.fontSize='12px';waBtn.addEventListener('click',()=>{const textMessage='أهلًا بك في حديقة طيور الريان 🌿\nرابط دفع الحجز رقم '+b.booking_number+': '+b.tap_invoice_url+'\nالمبلغ المتبقي: '+money(remaining);window.open('https://wa.me/'+waPhone+'?text='+encodeURIComponent(textMessage),'_blank','noopener,noreferrer')});actionTd.append(waBtn)}}const payBtn=document.createElement('button');payBtn.type='button';payBtn.textContent='سداد نقدي';payBtn.style.padding='7px 10px';payBtn.style.fontSize='12px';payBtn.addEventListener('click',async()=>{const raw=prompt('أدخل المبلغ النقدي المستلم. المتبقي: '+money(remaining),String(remaining));if(raw===null)return;const amount=Number(String(raw).trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.').replace(/٬/g,'').replace(/,/g,''));if(!Number.isFinite(amount)||amount<=0){message('appMessage','أدخل مبلغًا صحيحًا أكبر من صفر.','error');return}payBtn.disabled=true;try{const {data:payment,error:paymentError}=await supabase.rpc('hadeeqah_record_cash_payment',{p_booking_id:b.id,p_amount:amount});if(paymentError)throw paymentError;await loadBookings();message('appMessage','تم تسجيل استلام '+money(amount)+' نقدًا للحجز رقم '+b.booking_number+'. المتبقي: '+money(payment.remaining||0)+'.','ok')}catch(err){message('appMessage',err.message||'تعذر تسجيل السداد النقدي.','error')}finally{payBtn.disabled=false}});actionTd.append(payBtn)}else if(!actionTd.childNodes.length){actionTd.textContent='—'}tr.append(actionTd);$('bookingRows').append(tr)}
+ for(const b of rows){const tr=document.createElement('tr');const vals=['#'+b.booking_number,b.customer_name,[b.visit_date,b.visit_time].filter(Boolean).join(' · '),b.party_size+' أشخاص',money(b.amount_due),b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':b.payment_status==='pending'?'بانتظار الدفع':b.payment_status==='failed'?'فشل الدفع':'غير مسدد',b.booking_status==='confirmed'?'مؤكد':b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':'قيد الانتظار'];for(const v of vals){const td=document.createElement('td');td.textContent=v;tr.append(td)}const actionTd=document.createElement('td');actionTd.style.display='flex';actionTd.style.flexWrap='wrap';actionTd.style.gap='6px';const canManage=['booking_employee','supervisor'].includes(employee.role);if(canManage&&!['arrived','cancelled'].includes(b.booking_status)){const qrBtn=document.createElement('button');qrBtn.type='button';qrBtn.textContent='إعادة QR';qrBtn.className='secondary';qrBtn.style.padding='7px 10px';qrBtn.style.fontSize='12px';qrBtn.addEventListener('click',async()=>{qrBtn.disabled=true;try{const token=randomToken(),tokenHash=await sha256(token);const {error:rotateError}=await supabase.rpc('hadeeqah_rotate_qr_token',{p_booking_id:b.id,p_token_hash:tokenHash});if(rotateError)throw rotateError;await showQr(b,token);message('appMessage','تم إصدار رمز QR جديد للحجز رقم '+b.booking_number+'. الرمز السابق لم يعد صالحًا.','ok')}catch(err){message('appMessage',err.message||'تعذر إصدار رمز جديد.','error')}finally{qrBtn.disabled=false}});actionTd.append(qrBtn)}const remaining=Number(b.amount_due||0)-Number(b.amount_paid||0);if(canManage&&remaining>0&&b.booking_status!=='cancelled'){const payBtn=document.createElement('button');payBtn.type='button';payBtn.textContent='سداد نقدي';payBtn.style.padding='7px 10px';payBtn.style.fontSize='12px';payBtn.addEventListener('click',async()=>{const raw=prompt('أدخل المبلغ النقدي المستلم. المتبقي: '+money(remaining),String(remaining));if(raw===null)return;const amount=Number(String(raw).trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.').replace(/٬/g,'').replace(/,/g,''));if(!Number.isFinite(amount)||amount<=0){message('appMessage','أدخل مبلغًا صحيحًا أكبر من صفر.','error');return}payBtn.disabled=true;try{const {data:payment,error:paymentError}=await supabase.rpc('hadeeqah_record_cash_payment',{p_booking_id:b.id,p_amount:amount});if(paymentError)throw paymentError;await loadBookings();message('appMessage','تم تسجيل استلام '+money(amount)+' نقدًا للحجز رقم '+b.booking_number+'. المتبقي: '+money(payment.remaining||0)+'.','ok')}catch(err){message('appMessage',err.message||'تعذر تسجيل السداد النقدي.','error')}finally{payBtn.disabled=false}});actionTd.append(payBtn)}else if(!actionTd.childNodes.length){actionTd.textContent='—'}tr.append(actionTd);$('bookingRows').append(tr)}
 }
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('loginBtn');btn.disabled=true;btn.textContent='جارٍ تسجيل الدخول…';hideMessage('loginMessage');try{const {error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await loadSession()}catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تحقق من البيانات وحاول مجددًا.','error')}finally{btn.disabled=false;btn.textContent='دخول إلى النظام'}});
 $('bookingForm').addEventListener('submit',async e=>{e.preventDefault();hideMessage('appMessage');const btn=$('createBookingBtn');btn.disabled=true;btn.textContent='جارٍ حفظ الحجز…';try{
@@ -181,7 +240,7 @@ $('stopScanBtn').addEventListener('click',stopScanner);
 $('startScanBtn').addEventListener('click',async()=>{hideMessage('scanMessage');if(!['reception','supervisor'].includes(employee?.role)){message('scanMessage','هذه الصفحة مخصصة للاستقبال والمشرف.','error');return}try{await stopScanner();scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});const video=$('scanVideo');video.srcObject=scanStream;video.classList.remove('hidden');await video.play();scanActive=true;const canvas=$('scanCanvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});const tick=async()=>{if(!scanActive)return;if(video.readyState>=2){canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.drawImage(video,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);const decode=await getJsQR();const code=decode(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'});if(code?.data){scanActive=false;await stopScanner();await processScannedQr(code.data);return}}requestAnimationFrame(tick)};requestAnimationFrame(tick)}catch(err){message('scanMessage','تعذر تشغيل الكاميرا. تأكد من السماح باستخدام الكاميرا وفتح الموقع عبر HTTPS. '+(err.message||''),'error')}});
 async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type!=='hadeeqah-booking'||!data.bookingId||!data.token)throw new Error('هذا ليس رمز حجز صالحًا.');const tokenHash=await sha256(data.token);const {data:checked,error}=await supabase.rpc('hadeeqah_checkin',{p_booking_id:data.bookingId,p_token_hash:tokenHash});if(error)throw error;const item=Array.isArray(checked)?checked[0]:checked;if(!item)throw new Error('لم يتم العثور على الحجز.');message('scanMessage','تم تسجيل وصول الزائر بنجاح! الزائر: '+item.customer_name+' — رقم الحجز: '+item.booking_number+' — عدد الأشخاص: '+item.party_size,'ok');await loadBookings()}catch(err){message('scanMessage',err.message||'تعذر التحقق من الرمز.','error')}}
 
-$('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
+$('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(employee?.role==='supervisor')await loadEmployees();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((_event,session)=>{if(!session){sessionUser=null;employee=null;company=null;showLogin()}});
 try{await loadSession()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}
