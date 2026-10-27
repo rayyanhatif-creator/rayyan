@@ -147,9 +147,9 @@ async function loadSession(){
  if(sessionError) throw sessionError;
  if(!session){showLogin();return;}
  sessionUser=session.user;
- const {data:rows,error:employeeError}=await supabase.from('hadeeqah_employees').select('*').eq('auth_user_id',session.user.id).eq('is_active',true).limit(1);
- if(employeeError) throw employeeError;
- employee=rows?.[0];
+ const {data:rows,error:employeeError}=await supabase.rpc('hadeeqah_get_my_employee');
+ if(employeeError) throw new Error('تعذر تحميل ملف الموظف: '+employeeError.message);
+ employee=Array.isArray(rows)?rows[0]:rows;
  if(!employee) throw new Error('تم تسجيل الدخول، لكن لا يوجد ملف موظف نشط مرتبط بهذا الحساب.');
  const {data:co,error:companyError}=await supabase.from('hadeeqah_companies').select('*').eq('id',employee.company_id).maybeSingle();
  if(companyError) throw companyError;
