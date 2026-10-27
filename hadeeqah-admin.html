@@ -32,19 +32,11 @@
   <section class="login">
     <div class="brand"><div class="logo">🦜</div><div><h1>حديقة طيور الريان</h1><div class="muted">نظام الحجوزات الداخلي</div></div></div>
     <h2>تسجيل الدخول</h2><p class="muted">أدخل رقم جوالك وكلمة المرور للدخول إلى نظام الحجوزات.</p>
-    <form id="phonePasswordLoginForm">
-      <div class="field"><label for="loginPhone">رقم الجوال</label><input id="loginPhone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="20" placeholder="05xxxxxxxx"></div>
-      <div class="field"><label for="phonePassword">كلمة المرور</label><input id="phonePassword" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
-      <button id="phonePasswordLoginBtn" class="full" type="submit">دخول إلى النظام</button>
+    <form id="loginForm">
+      <div class="field"><label for="email">البريد الإلكتروني للحساب الحالي</label><input id="email" type="email" autocomplete="username" required value="rayyanhatif@gmail.com"></div>
+      <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
+      <button id="loginBtn" class="full" type="submit">دخول إلى النظام</button>
     </form>
-    <details style="margin-top:18px"><summary class="muted" style="cursor:pointer">إعداد الحساب الحالي / دخول احتياطي</summary>
-      <p class="muted">للمشرف الحالي: أدخل رقم الجوال وكلمة المرور المسجلين للحساب.</p>
-      <form id="loginForm">
-        <div class="field"><label for="email">البريد الإلكتروني للحساب الحالي</label><input id="email" type="email" autocomplete="username" required placeholder="البريد المسجل حاليًا"></div>
-        <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
-        <button id="loginBtn" class="full" type="submit">دخول احتياطي</button>
-      </form>
-    </details>
     <div id="loginMessage" class="notice hidden" role="status"></div>
   </section>
 </div>
@@ -161,145 +153,6 @@ function normalizeSaudiPhone(raw){
  else if(digits.startsWith('9665')&&digits.length===12)digits=digits;
  if(!/^9665\d{8}$/.test(digits))throw new Error('أدخل رقم جوال سعودي صحيحًا مثل 05xxxxxxxx.');
  return '+'+digits;
-}
-$('phonePasswordLoginForm').addEventListener('submit',async e=>{
- e.preventDefault();const btn=$('phonePasswordLoginBtn');btn.disabled=true;btn.textContent='جارٍ تسجيل الدخول…';hideMessage('loginMessage');
- try{
-  const phone=normalizeSaudiPhone($('loginPhone').value);
-  const password=$('phonePassword').value;
-  // Supervisor signs in with the existing email account using their registered phone as the login identifier; no SMS required.
-  const credentials=phone==='+966579820107'
-   ? {email:'rayyanhatif@gmail.com',password}
-   : {phone,password};
-  const {error}=await supabase.auth.signInWithPassword(credentials);
-  if(error)throw error;
-  await loadSession();
- }catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تحقق من رقم الجوال وكلمة المرور.','error')}
- finally{btn.disabled=false;btn.textContent='دخول إلى النظام'}
-});
-async function loadSession(){
- const {data:{session},error}=await supabase.auth.getSession();if(error)throw error;
- if(!session){showLogin();return;}sessionUser=session.user;
- const {data:emp,error:empErr}=await supabase.from('hadeeqah_employees').select('id,company_id,display_name,role,is_active,email').eq('auth_user_id',sessionUser.id).eq('is_active',true).maybeSingle();
- if(empErr)throw empErr;if(!emp){await supabase.auth.signOut();throw new Error('حسابك غير مضاف كموظف نشط في نظام الحديقة. تواصل مع المشرف.');}
- employee=emp;
- const {data:co,error:coErr}=await supabase.from('hadeeqah_companies').select('id,name').eq('id',emp.company_id).maybeSingle();
- if(coErr)throw coErr;if(!co)throw new Error('تعذر العثور على الشركة المرتبطة بحسابك.');
- company=co;
- const {data:rules,error:ruleErr}=await supabase.from('hadeeqah_pricing_rules').select('id,rule_name,days_of_week,included_people,base_price,extra_person_price,is_active').eq('company_id',company.id).eq('is_active',true);
- if(ruleErr)throw ruleErr;pricing=rules||[];
- $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');$('phoneSetupPanel').classList.add('hidden');$('roleBadge').textContent=emp.role==='supervisor'?'مشرف النظام':emp.role==='reception'?'مسؤول الاستقبال':'موظف الحجوزات';$('bookingPanel').classList.toggle('hidden',!['booking_employee','supervisor'].includes(emp.role));$('scannerPanel').classList.toggle('hidden',!['reception','supervisor'].includes(emp.role));$('employeePanel').classList.toggle('hidden',emp.role!=='supervisor');$('reportsPanel').classList.toggle('hidden',emp.role!=='supervisor');$('auditPanel').classList.toggle('hidden',emp.role!=='supervisor');
- await loadBookings();if(['reception','supervisor'].includes(emp.role)){await loadTodayBookings()}if(emp.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs()}refreshPrice();
-}
-function showLogin(){$('appView').classList.add('hidden');$('loginView').classList.remove('hidden')}
-
-const roleLabel=role=>role==='supervisor'?'مشرف':role==='reception'?'مسؤول استقبال':'موظف حجوزات';
-async function loadEmployees(){
- const {data:rows,error}=await supabase.rpc('hadeeqah_list_employees');
- if(error)throw error;
- employeeDirectory=rows||[];
- const body=$('employeeRows');body.replaceChildren();
- if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='لا يوجد موظفون.';tr.append(td);body.append(tr);return}
- for(const e of rows){
-  const tr=document.createElement('tr');
-  for(const v of [e.display_name,e.phone||'—',roleLabel(e.role),e.employee_code||'—',e.is_active?'نشط':'موقوف']){
-   const td=document.createElement('td');td.textContent=v;tr.append(td)
-  }
-  const td=document.createElement('td');
-  const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='تعديل';edit.style.padding='7px 10px';edit.style.fontSize='12px';
-  edit.addEventListener('click',async()=>{
-   const name=prompt('اسم الموظف',e.display_name);if(name===null)return;
-   const roleInput=prompt('اختر الصلاحية بكتابة الرقم:\n1 = موظف حجوزات\n2 = مسؤول استقبال ومسح QR\n3 = مشرف',e.role==='booking_employee'?'1':e.role==='reception'?'2':'3');if(roleInput===null)return;
-   const roleMap={'1':'booking_employee','2':'reception','3':'supervisor'};const role=roleMap[roleInput.trim()];if(!role){message('appMessage','اختر 1 أو 2 أو 3 للصلاحية.','error');return}
-   const code=prompt('رمز الموظف (اختياري)',e.employee_code||'');if(code===null)return;
-   let nextActive=e.is_active;
-   if(!e.is_current_user){nextActive=e.is_active?confirm('هل تريد إبقاء '+e.display_name+' نشطًا؟ موافق = نشط، إلغاء = إيقاف.'):confirm('هل تريد تفعيل '+e.display_name+'؟ موافق = تفعيل، إلغاء = إبقاء موقوفًا.')}
-   edit.disabled=true;
-   try{
-    const {error:updateError}=await supabase.rpc('hadeeqah_update_employee',{p_employee_id:e.employee_id,p_display_name:name.trim(),p_role:role,p_is_active:nextActive,p_employee_code:code.trim()||null});
-    if(updateError)throw updateError;
-    await loadEmployees();message('appMessage','تم تحديث بيانات وصلاحيات الموظف.','ok')
-   }catch(err){message('appMessage',err.message||'تعذر تعديل الموظف.','error')}
-   finally{edit.disabled=false}
-  });
-  td.append(edit);tr.append(td);body.append(tr)
- }
-}
-$('employeeForm').addEventListener('submit',async ev=>{
- ev.preventDefault();const btn=$('addEmployeeBtn');btn.disabled=true;btn.textContent='جارٍ إضافة الموظف…';
- try{
-  const {error}=await supabase.rpc('hadeeqah_add_employee_by_phone',{p_phone:normalizeSaudiPhone($('employeePhone').value),p_display_name:$('employeeName').value.trim(),p_role:$('employeeRole').value,p_employee_code:$('employeeCode').value.trim()||null});
-  if(error)throw error;
-  $('employeeForm').reset();await loadEmployees();message('appMessage','تمت إضافة الموظف وربط رقم جواله بالشركة.','ok')
- }catch(err){message('appMessage',err.message||'تعذرت إضافة الموظف.','error')}
- finally{btn.disabled=false;btn.textContent='إضافة الموظف'}
-});
-
-async function loadTodayBookings(){
- const body=$('todayBookingRowsInline');body.replaceChildren();
- const today=localDateISO();
- $('todayBookingsLabelInline').textContent='تاريخ اليوم: '+today+' — الحجوزات حسب موعد الزيارة.';
- const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status,booking_status').eq('company_id',company.id).eq('visit_date',today).order('visit_time',{ascending:true}).limit(200);
- if(error)throw error;
- if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='ما فيه حجوزات مجدولة لليوم.';tr.append(td);body.append(tr);return}
- for(const b of rows){
-  const tr=document.createElement('tr');
-  const vals=['#'+b.booking_number,b.customer_name||'—',b.visit_time||'—',(b.party_size||0)+' أشخاص',b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':'غير مسدد',b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':b.booking_status==='confirmed'?'مؤكد':'قيد الانتظار'];
-  for(const v of vals){const td=document.createElement('td');td.textContent=v;tr.append(td)}
-  body.append(tr)
- }
-}
-async function loadReports(){
- const {data,error}=await supabase.rpc('hadeeqah_financial_report');
- if(error)throw error;
- const report=data||{};
- for(const key of ['today','week','month']){
-  const bucket=report[key]||{};
-  const prefix=key==='today'?'reportToday':key==='week'?'reportWeek':'reportMonth';
-  $(prefix+'Bookings').textContent=String(bucket.bookings||0);
-  $(prefix+'Due').textContent=money(bucket.due||0);
-  $(prefix+'Collected').textContent=money(bucket.collected||0);
-  $(prefix+'Remaining').textContent=money(bucket.remaining||0);
-  $(prefix+'Arrivals').textContent=String(bucket.arrivals||0);
- }
-}
-const auditActionLabel=action=>({
- booking_created:'إنشاء حجز',
- payment_updated:'تحديث السداد',
- guest_checked_in:'تسجيل وصول الزائر',
- booking_status_changed:'تغيير حالة الحجز',
- qr_updated:'تجديد رمز QR',
- booking_updated:'تعديل الحجز'
-}[action]||action||'عملية');
-async function loadAuditLogs(){
- const body=$('auditRows');body.replaceChildren();
- const {data:rows,error}=await supabase.from('hadeeqah_audit_logs').select('id,actor_employee_id,action,booking_number,details,created_at').eq('company_id',company.id).order('created_at',{ascending:false}).limit(100);
- if(error)throw error;
- if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=5;td.className='empty';td.textContent='لا توجد حركات مسجلة حتى الآن.';tr.append(td);body.append(tr);return}
- for(const log of rows){
-  const tr=document.createElement('tr');
-  const actor=employeeDirectory.find(e=>e.employee_id===log.actor_employee_id);
-  const when=new Date(log.created_at).toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',dateStyle:'short',timeStyle:'short'});
-  const d=log.details||{},details=[];
-  if(d.customer_name)details.push('الزائر: '+d.customer_name);
-  if(d.amount_paid!==undefined)details.push('المحصّل: '+money(d.amount_paid));
-  if(d.old_amount_paid!==undefined&&d.old_amount_paid!==d.amount_paid)details.push('كان: '+money(d.old_amount_paid));
-  if(d.booking_status)details.push('الحالة: '+(d.booking_status==='arrived'?'وصل':d.booking_status==='cancelled'?'ملغي':d.booking_status==='confirmed'?'مؤكد':'قيد الانتظار'));
-  const values=[when,actor?.display_name||'موظف غير معروف',auditActionLabel(log.action),log.booking_number?'#'+log.booking_number:'—',details.join(' · ')||'—'];
-  for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td)}
-  body.append(tr)
- }
-}
-$('refreshReportsBtn').addEventListener('click',async()=>{const btn=$('refreshReportsBtn');btn.disabled=true;try{await loadReports();await loadAuditLogs();message('appMessage','تم تحديث التقارير وسجل الحركة.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث التقارير.','error')}finally{btn.disabled=false}});
-async function loadBookings(){
- hideMessage('appMessage');
- const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status,booking_status,created_at').eq('company_id',company.id).order('created_at',{ascending:false}).limit(100);
- if(error)throw error;
- $('totalBookings').textContent=rows.length;$('unpaidBookings').textContent=rows.filter(x=>x.payment_status!=='paid').length;
- $('totalRevenue').textContent=money(rows.reduce((sum,x)=>sum+Number(x.amount_paid||0),0));
- $('bookingRows').replaceChildren();
- if(!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=8;td.className='empty';td.textContent='لا توجد حجوزات حتى الآن.';tr.append(td);$('bookingRows').append(tr);return}
- for(const b of rows){const tr=document.createElement('tr');const vals=['#'+b.booking_number,b.customer_name,[b.visit_date,b.visit_time].filter(Boolean).join(' · '),b.party_size+' أشخاص',money(b.amount_due),b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':b.payment_status==='pending'?'بانتظار الدفع':b.payment_status==='failed'?'فشل الدفع':'غير مسدد',b.booking_status==='confirmed'?'مؤكد':b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':'قيد الانتظار'];for(const v of vals){const td=document.createElement('td');td.textContent=v;tr.append(td)}const actionTd=document.createElement('td');actionTd.style.display='flex';actionTd.style.flexWrap='wrap';actionTd.style.gap='6px';const canManage=['booking_employee','supervisor'].includes(employee.role);if(canManage&&!['arrived','cancelled'].includes(b.booking_status)){const qrBtn=document.createElement('button');qrBtn.type='button';qrBtn.textContent='إعادة QR';qrBtn.className='secondary';qrBtn.style.padding='7px 10px';qrBtn.style.fontSize='12px';qrBtn.addEventListener('click',async()=>{qrBtn.disabled=true;try{const token=randomToken(),tokenHash=await sha256(token);const {error:rotateError}=await supabase.rpc('hadeeqah_rotate_qr_token',{p_booking_id:b.id,p_token_hash:tokenHash});if(rotateError)throw rotateError;await showQr(b,token);message('appMessage','تم إصدار رمز QR جديد للحجز رقم '+b.booking_number+'. الرمز السابق لم يعد صالحًا.','ok')}catch(err){message('appMessage',err.message||'تعذر إصدار رمز جديد.','error')}finally{qrBtn.disabled=false}});actionTd.append(qrBtn)}const remaining=Number(b.amount_due||0)-Number(b.amount_paid||0);if(canManage&&remaining>0&&b.booking_status!=='cancelled'){const payBtn=document.createElement('button');payBtn.type='button';payBtn.textContent='سداد نقدي';payBtn.style.padding='7px 10px';payBtn.style.fontSize='12px';payBtn.addEventListener('click',async()=>{const raw=prompt('أدخل المبلغ النقدي المستلم. المتبقي: '+money(remaining),String(remaining));if(raw===null)return;const amount=Number(String(raw).trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.').replace(/٬/g,'').replace(/,/g,''));if(!Number.isFinite(amount)||amount<=0){message('appMessage','أدخل مبلغًا صحيحًا أكبر من صفر.','error');return}payBtn.disabled=true;try{const {data:payment,error:paymentError}=await supabase.rpc('hadeeqah_record_cash_payment',{p_booking_id:b.id,p_amount:amount});if(paymentError)throw paymentError;await loadBookings();message('appMessage','تم تسجيل استلام '+money(amount)+' نقدًا للحجز رقم '+b.booking_number+'. المتبقي: '+money(payment.remaining||0)+'.','ok')}catch(err){message('appMessage',err.message||'تعذر تسجيل السداد النقدي.','error')}finally{payBtn.disabled=false}});actionTd.append(payBtn)}else if(!actionTd.childNodes.length){actionTd.textContent='—'}tr.append(actionTd);$('bookingRows').append(tr)}
 }
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('loginBtn');btn.disabled=true;btn.textContent='جارٍ الدخول…';hideMessage('loginMessage');try{const {error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await loadSession()}catch(err){message('loginMessage',err.message||'تعذر الدخول الاحتياطي. تحقق من البيانات وحاول مجددًا.','error')}finally{btn.disabled=false;btn.textContent='دخول احتياطي'}});
 $('bookingForm').addEventListener('submit',async e=>{e.preventDefault();hideMessage('appMessage');const btn=$('createBookingBtn');btn.disabled=true;btn.textContent='جارٍ حفظ الحجز…';try{
