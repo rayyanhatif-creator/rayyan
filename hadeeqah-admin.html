@@ -157,14 +157,15 @@ async function loadSession(){
  $('reportsPanel').classList.toggle('hidden',employee.role!=='supervisor');
  $('auditPanel').classList.toggle('hidden',employee.role!=='supervisor');
  $('employeePanel').classList.toggle('hidden',employee.role!=='supervisor');
- try{await loadBookings();}catch(err){message('appMessage',err.message||'تعذر تحميل الحجوزات.','error');}
- if(['reception','supervisor'].includes(employee.role)&&typeof loadTodayBookings==='function') await loadTodayBookings();
- if(employee.role==='supervisor'){
-  if(typeof loadEmployees==='function') await loadEmployees();
-  if(typeof loadReports==='function') await loadReports();
-  if(typeof loadAuditLogs==='function') await loadAuditLogs();
+ try{await loadBookings();}catch(err){message('appMessage','تعذر تحميل الحجوزات: '+(err.message||'خطأ غير معروف'),'error');}
+ if(['reception','supervisor'].includes(employee.role)&&typeof loadTodayBookings==='function'){
+  try{await loadTodayBookings()}catch(err){message('appMessage','تعذر تحميل حجوزات اليوم: '+(err.message||'خطأ غير معروف'),'error')}
  }
-}
+ if(employee.role==='supervisor'){
+  try{if(typeof loadEmployees==='function')await loadEmployees()}catch(err){message('appMessage','تعذر تحميل الموظفين: '+(err.message||'خطأ غير معروف'),'error')}
+  try{if(typeof loadReports==='function')await loadReports()}catch(err){message('appMessage','تعذر تحميل التقارير المالية: '+(err.message||'خطأ غير معروف'),'error')}
+  try{if(typeof loadAuditLogs==='function')await loadAuditLogs()}catch(err){message('appMessage','تعذر تحميل سجل الحركة: '+(err.message||'خطأ غير معروف'),'error')}
+ }}
 
 const money=n=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:'SAR',maximumFractionDigits:0}).format(Number(n||0));
 async function loadEmployees(){
