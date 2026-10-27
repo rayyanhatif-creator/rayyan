@@ -42,6 +42,19 @@
 <div id="appView" class="wrap hidden">
   <header class="header"><div><div class="brand" style="margin:0"><div class="logo">🦜</div><div><h1>حديقة طيور الريان</h1><div class="muted">لوحة إدارة الحجوزات</div></div></div></div><div><span id="roleBadge" class="badge">حساب موظف</span> <button id="refreshBtn" class="secondary">تحديث</button> <button id="logoutBtn" class="secondary">خروج</button></div></header>
   <div id="appMessage" class="notice hidden" role="status"></div>
+  <section id="scannerPanel" class="panel hidden" style="margin-bottom:12px">
+    <h3>استقبال الزوار ومسح QR</h3>
+    <p class="muted">امسح رمز الحجز عند وصول الزائر لتسجيل حضوره. لا يمكن استخدام الرمز نفسه مرتين.</p>
+    <div class="actions"><button id="startScanBtn" type="button">تشغيل الكاميرا ومسح الرمز</button><button id="stopScanBtn" type="button" class="secondary">إيقاف الكاميرا</button></div>
+    <video id="scanVideo" class="scan-video hidden" playsinline muted></video>
+    <canvas id="scanCanvas" class="hidden"></canvas>
+    <div id="scanMessage" class="notice hidden" role="status"></div>
+    <div id="todayBookingsInline" style="margin-top:16px">
+      <h3>حجوزات اليوم</h3>
+      <p class="muted" id="todayBookingsLabelInline">الحجوزات المجدولة اليوم تظهر هنا تلقائيًا.</p>
+      <div class="table-wrap"><table><thead><tr><th>رقم الحجز</th><th>الزائر</th><th>الوقت</th><th>الأشخاص</th><th>السداد</th><th>الحالة</th></tr></thead><tbody id="todayBookingRowsInline"><tr><td colspan="6" class="empty">جارٍ تحميل حجوزات اليوم…</td></tr></tbody></table></div>
+    </div>
+  </section>
   <section class="stats">
     <div class="stat"><small>إجمالي الحجوزات</small><strong id="totalBookings">—</strong></div>
     <div class="stat"><small>حجوزات بانتظار السداد</small><strong id="unpaidBookings">—</strong></div>
@@ -83,14 +96,7 @@
     <div class="notice">تنبيه: يجب أن يكون للموظف حساب دخول موجود مسبقًا بنفس البريد الإلكتروني. هذه الشاشة تربط الحساب بالشركة وتحدد صلاحياته، ولا تنشئ كلمة مرور.</div>
     <div class="table-wrap" style="margin-top:12px"><table style="min-width:650px"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>رمز الموظف</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="employeeRows"><tr><td colspan="6" class="empty">جارٍ تحميل الموظفين…</td></tr></tbody></table></div>
   </section>
-  <section id="scannerPanel" class="panel hidden" style="margin-top:16px">
-    <h3>استقبال الزوار ومسح QR</h3>
-    <p class="muted">امسح رمز الحجز عند وصول الزائر لتسجيل حضوره. لا يمكن استخدام الرمز نفسه مرتين.</p>
-    <div class="actions"><button id="startScanBtn" type="button">تشغيل الكاميرا ومسح الرمز</button><button id="stopScanBtn" type="button" class="secondary">إيقاف الكاميرا</button></div>
-    <video id="scanVideo" class="scan-video hidden" playsinline muted></video>
-    <canvas id="scanCanvas" class="hidden"></canvas>
-    <div id="scanMessage" class="notice hidden" role="status"></div>
-  </section>
+
   <section id="qrPanel" class="qr-modal hidden" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
     <div class="qr-modal-card">
       <button id="closeQrBtn" type="button" class="secondary qr-close" aria-label="إغلاق">✕</button>
@@ -117,7 +123,7 @@ const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:'SAR',maximumFractionDigits:0}).format(Number(n||0));
 function message(id,text,type=''){const el=$(id);el.textContent=text;el.className='notice'+(type?' '+type:'');el.classList.remove('hidden')}
 function hideMessage(id){$(id).classList.add('hidden')}
-function localDateISO(){const d=new Date();const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+function localDateISO(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 function priceFor(date,count){if(!date||!count||count<1)return null;const d=new Date(date+'T12:00:00');const dow=d.getDay();const rule=pricing.find(r=>r.is_active&&r.days_of_week.includes(dow)&&(!r.valid_from||date>=r.valid_from)&&(!r.valid_until||date<=r.valid_until));if(!rule)return null;return {amount:Number(rule.base_price)+Math.max(0,count-Number(rule.included_people))*Number(rule.extra_person_price),rule};}
 function refreshPrice(){const count=Number($('partySize').value);const result=priceFor($('visitDate').value,count);$('pricePreview').textContent=result?'السعر المتوقع: '+money(result.amount)+' — '+(result.rule.rule_name||'حسب التسعيرة المعتمدة'):'اختر تاريخ الزيارة وعدد الأشخاص لاحتساب السعر.'}
 $('visitDate').min=localDateISO();
@@ -135,7 +141,7 @@ async function loadSession(){
  const {data:rules,error:ruleErr}=await supabase.from('hadeeqah_pricing_rules').select('id,rule_name,days_of_week,included_people,base_price,extra_person_price,is_active').eq('company_id',company.id).eq('is_active',true);
  if(ruleErr)throw ruleErr;pricing=rules||[];
  $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');$('roleBadge').textContent=emp.role==='supervisor'?'مشرف النظام':emp.role==='reception'?'مسؤول الاستقبال':'موظف الحجوزات';$('bookingPanel').classList.toggle('hidden',!['booking_employee','supervisor'].includes(emp.role));$('scannerPanel').classList.toggle('hidden',!['reception','supervisor'].includes(emp.role));$('employeePanel').classList.toggle('hidden',emp.role!=='supervisor');
- await loadBookings();if(emp.role==='supervisor')await loadEmployees();refreshPrice();
+ await loadBookings();if(['reception','supervisor'].includes(emp.role)){await loadTodayBookings()}if(emp.role==='supervisor')await loadEmployees();refreshPrice();
 }
 function showLogin(){$('appView').classList.add('hidden');$('loginView').classList.remove('hidden')}
 
@@ -180,6 +186,20 @@ $('employeeForm').addEventListener('submit',async ev=>{
  finally{btn.disabled=false;btn.textContent='إضافة الموظف'}
 });
 
+async function loadTodayBookings(){
+ const body=$('todayBookingRowsInline');body.replaceChildren();
+ const today=localDateISO();
+ $('todayBookingsLabelInline').textContent='تاريخ اليوم: '+today+' — الحجوزات حسب موعد الزيارة.';
+ const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status,booking_status').eq('company_id',company.id).eq('visit_date',today).order('visit_time',{ascending:true}).limit(200);
+ if(error)throw error;
+ if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='ما فيه حجوزات مجدولة لليوم.';tr.append(td);body.append(tr);return}
+ for(const b of rows){
+  const tr=document.createElement('tr');
+  const vals=['#'+b.booking_number,b.customer_name||'—',b.visit_time||'—',(b.party_size||0)+' أشخاص',b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':'غير مسدد',b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':b.booking_status==='confirmed'?'مؤكد':'قيد الانتظار'];
+  for(const v of vals){const td=document.createElement('td');td.textContent=v;tr.append(td)}
+  body.append(tr)
+ }
+}
 async function loadBookings(){
  hideMessage('appMessage');
  const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status,booking_status,created_at').eq('company_id',company.id).order('created_at',{ascending:false}).limit(100);
@@ -239,7 +259,7 @@ $('stopScanBtn').addEventListener('click',stopScanner);
 $('startScanBtn').addEventListener('click',async()=>{hideMessage('scanMessage');if(!['reception','supervisor'].includes(employee?.role)){message('scanMessage','هذه الصفحة مخصصة للاستقبال والمشرف.','error');return}try{await stopScanner();scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});const video=$('scanVideo');video.srcObject=scanStream;video.classList.remove('hidden');await video.play();scanActive=true;const canvas=$('scanCanvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});const tick=async()=>{if(!scanActive)return;if(video.readyState>=2){canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.drawImage(video,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);const decode=await getJsQR();const code=decode(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'});if(code?.data){scanActive=false;await stopScanner();await processScannedQr(code.data);return}}requestAnimationFrame(tick)};requestAnimationFrame(tick)}catch(err){message('scanMessage','تعذر تشغيل الكاميرا. تأكد من السماح باستخدام الكاميرا وفتح الموقع عبر HTTPS. '+(err.message||''),'error')}});
 async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type!=='hadeeqah-booking'||!data.bookingId||!data.token)throw new Error('هذا ليس رمز حجز صالحًا.');const tokenHash=await sha256(data.token);const {data:checked,error}=await supabase.rpc('hadeeqah_checkin',{p_booking_id:data.bookingId,p_token_hash:tokenHash});if(error)throw error;const item=Array.isArray(checked)?checked[0]:checked;if(!item)throw new Error('لم يتم العثور على الحجز.');message('scanMessage','تم تسجيل وصول الزائر بنجاح! الزائر: '+item.customer_name+' — رقم الحجز: '+item.booking_number+' — عدد الأشخاص: '+item.party_size,'ok');await loadBookings()}catch(err){message('scanMessage',err.message||'تعذر التحقق من الرمز.','error')}}
 
-$('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(employee?.role==='supervisor')await loadEmployees();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
+$('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();if(employee?.role==='supervisor')await loadEmployees();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((_event,session)=>{if(!session){sessionUser=null;employee=null;company=null;showLogin()}});
 try{await loadSession()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}
