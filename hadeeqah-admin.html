@@ -390,20 +390,43 @@ function randomToken(){const bytes=new Uint8Array(32);crypto.getRandomValues(byt
 async function sha256(value){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')}
 async function drawQrTicket(booking){
  const qrCanvas=$('qrCanvas'),ticket=$('qrTicketCanvas'),ctx=ticket.getContext('2d');
- const width=720,pad=36,qrSize=360;
- ticket.width=width;ticket.height=850;
- ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,850);
- ctx.fillStyle='#005c45';ctx.fillRect(0,0,width,150);
- ctx.textAlign='center';ctx.direction='rtl';ctx.fillStyle='#ffffff';
- ctx.font='bold 38px Tahoma,Arial,sans-serif';ctx.fillText('مرحبًا بك في حديقة طيور الريان',width/2,64);
- ctx.font='22px Tahoma,Arial,sans-serif';ctx.fillText('نتمنى لك زيارة ممتعة',width/2,108);
- ctx.fillStyle='#171717';ctx.font='bold 34px Tahoma,Arial,sans-serif';ctx.fillText(String(booking.customer_name||'زائرنا الكريم'),width/2,205);
- ctx.font='22px Tahoma,Arial,sans-serif';ctx.fillStyle='#555555';ctx.fillText('رقم الحجز: '+String(booking.booking_number),width/2,248);
- const x=(width-qrSize)/2,y=285;
- ctx.fillStyle='#ffffff';ctx.fillRect(x-14,y-14,qrSize+28,qrSize+28);
+ const width=720,height=1040,center=width/2;
+ ticket.width=width;ticket.height=height;
+ ctx.clearRect(0,0,width,height);
+ // Warm ivory background and premium green header
+ ctx.fillStyle='#F6F4ED';ctx.fillRect(0,0,width,height);
+ ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.roundRect(24,24,width-48,height-48,28);ctx.fill();
+ const header=ctx.createLinearGradient(24,24,width-24,250);
+ header.addColorStop(0,'#073F32');header.addColorStop(1,'#087456');
+ ctx.fillStyle=header;ctx.beginPath();ctx.roundRect(24,24,width-48,245,[28,28,0,0]);ctx.fill();
+ ctx.fillStyle='#D6B56D';ctx.fillRect(58,57,64,5);
+ ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.direction='rtl';
+ ctx.fillStyle='#E6D09A';ctx.font='bold 20px Tahoma,Arial,sans-serif';ctx.fillText('H A D E E Q A H   T U Y O O R',center,91);
+ ctx.fillStyle='#FFFFFF';ctx.font='bold 38px Tahoma,Arial,sans-serif';ctx.fillText('حديقة طيور الريان',center,145);
+ ctx.fillStyle='#DDEDE5';ctx.font='22px Tahoma,Arial,sans-serif';ctx.fillText('بطاقة دخول الزائر',center,190);
+ // Visitor identity
+ ctx.fillStyle='#8B7849';ctx.font='bold 18px Tahoma,Arial,sans-serif';ctx.fillText('اسم الزائر',center,315);
+ ctx.fillStyle='#17251F';ctx.font='bold 34px Tahoma,Arial,sans-serif';
+ let guest=String(booking.customer_name||'زائرنا الكريم');
+ if(guest.length>30)guest=guest.slice(0,29)+'…';
+ ctx.fillText(guest,center,362);
+ // QR frame
+ const qrSize=365,x=center-qrSize/2,y=405;
+ ctx.shadowColor='rgba(10,50,35,0.12)';ctx.shadowBlur=22;ctx.shadowOffsetY=7;
+ ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.roundRect(x-24,y-24,qrSize+48,qrSize+48,26);ctx.fill();
+ ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
  ctx.drawImage(qrCanvas,x,y,qrSize,qrSize);
- ctx.fillStyle='#171717';ctx.font='22px Tahoma,Arial,sans-serif';ctx.fillText('تاريخ الزيارة: '+String(booking.visit_date||'غير محدد'),width/2,690);ctx.fillText('وقت الزيارة: '+String(booking.visit_time||'غير محدد'),width/2,730);ctx.fillText('عدد الأشخاص: '+String(booking.party_size||'—'),width/2,770);ctx.fillStyle='#005c45';ctx.fillRect(pad,800,width-pad*2,3);
- ctx.fillStyle='#333333';ctx.font='20px Tahoma,Arial,sans-serif';ctx.fillText('أبرز هذا الرمز عند الوصول',width/2,830);
+ ctx.fillStyle='#52645A';ctx.font='20px Tahoma,Arial,sans-serif';ctx.fillText('امسح الرمز عند بوابة الاستقبال',center,826);
+ // Booking number chip
+ ctx.fillStyle='#F3EAD4';ctx.beginPath();ctx.roundRect(230,850,260,60,18);ctx.fill();
+ ctx.fillStyle='#665329';ctx.font='bold 24px Tahoma,Arial,sans-serif';ctx.fillText('رقم الحجز  '+String(booking.booking_number),center,888);
+ // Three compact details
+ const detailsY=950;
+ ctx.fillStyle='#17251F';ctx.font='bold 19px Tahoma,Arial,sans-serif';
+ ctx.fillText('تاريخ الزيارة',140,detailsY-14);ctx.fillText('وقت الزيارة',360,detailsY-14);ctx.fillText('الأشخاص',570,detailsY-14);
+ ctx.fillStyle='#52645A';ctx.font='20px Tahoma,Arial,sans-serif';
+ ctx.fillText(String(booking.visit_date||'—'),140,detailsY+20);ctx.fillText(String(booking.visit_time||'—'),360,detailsY+20);ctx.fillText(String(booking.party_size||'—'),570,detailsY+20);
+ ctx.fillStyle='#D6B56D';ctx.fillRect(70,1000,width-140,3);
 }
 async function showQr(booking,token){activeQrBooking=booking;const qr=await getQRCode();const payload=JSON.stringify({type:'hadeeqah-booking',bookingId:booking.id,token});await qr.toCanvas($('qrCanvas'),payload,{width:300,margin:2,errorCorrectionLevel:'H',color:{dark:'#121212',light:'#ffffff'}});$('qrCustomer').textContent=booking.customer_name;$('qrBookingNo').textContent='رقم الحجز: '+booking.booking_number;await drawQrTicket(booking);$('qrPanel').classList.remove('hidden');document.body.style.overflow='hidden';$('closeQrBtn').focus()}
 function closeQrModal(){$('qrPanel').classList.add('hidden');document.body.style.overflow='';activeQrBooking=null}
