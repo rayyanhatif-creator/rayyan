@@ -358,7 +358,7 @@ $('unifiedLoginForm').addEventListener('submit',async e=>{
 $('bookingForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=$('createBookingBtn');btn.disabled=true;btn.textContent='جارٍ حفظ الحجز…';
  try{
-  if(!['booking_employee','supervisor'].includes(employee?.role))throw new Error('صلاحيتك الحالية لا تسمح بإنشاء الحجوزات.');
+  if(!['booking_employee','supervisor'].includes(employee?.role)&&!(employee?.role==='reception'&&$('bookingPanel').dataset.receptionOpened==='true'))throw new Error('صلاحيتك الحالية لا تسمح بإنشاء الحجوزات.');
   const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),date=$('visitDate').value,count=Number($('partySize').value),result=priceFor(date,count),manualEnabled=!$('manualPriceWrap').classList.contains('hidden')&&$('manualPrice').value.trim()!=='';
   if(!name||!date||!Number.isInteger(count)||count<1||count>100)throw new Error('تأكد من اسم الزائر وتاريخ الزيارة وعدد الأشخاص.');
   if(!result)throw new Error('لا توجد تسعيرة فعالة لهذا اليوم. راجع المشرف.');
