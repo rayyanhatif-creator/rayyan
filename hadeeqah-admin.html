@@ -31,9 +31,9 @@
 <div id="loginView" class="wrap">
   <section class="login">
     <div class="brand"><div class="logo">🦜</div><div><h1>حديقة طيور الريان</h1><div class="muted">نظام الحجوزات الداخلي</div></div></div>
-    <h2>تسجيل الدخول</h2><p class="muted">سجّل دخولك برقم الجوال أو البريد الإلكتروني وكلمة المرور، بدون رمز SMS.</p>
+    <h2>تسجيل الدخول</h2><p class="muted">سجّل دخولك بالبريد الإلكتروني وكلمة المرور.</p>
     <form id="unifiedLoginForm">
-      <div class="field"><label for="loginIdentifier">رقم الجوال أو البريد الإلكتروني</label><input id="loginIdentifier" type="text" autocomplete="username" required maxlength="254" placeholder="05xxxxxxxx أو name@example.com"></div>
+      <div class="field"><label for="loginIdentifier">البريد الإلكتروني</label><input id="loginIdentifier" type="email" autocomplete="username" required maxlength="254" placeholder="name@example.com"></div>
       <div class="field"><label for="unifiedPassword">كلمة المرور</label><input id="unifiedPassword" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
       <button id="unifiedLoginBtn" class="full" type="submit">دخول إلى النظام</button>
     </form>
@@ -98,19 +98,19 @@
   </section>
   <section id="employeePanel" class="panel hidden" style="margin-top:16px">
     <h3>إدارة الموظفين والصلاحيات</h3>
-    <p class="muted">أنشئ حساب الموظف بنفسك: أدخل الاسم ورقم الجوال وكلمة المرور والصلاحية ورمز الموظف الذي تختاره. يستخدم الموظف رقم جواله وكلمة المرور لتسجيل الدخول.</p>
+    <p class="muted">أنشئ حساب الموظف بنفسك: أدخل الاسم والبريد الإلكتروني وكلمة المرور والصلاحية ورمز الموظف الذي تختاره. يستخدم الموظف بريده الإلكتروني وكلمة المرور لتسجيل الدخول.</p>
     <form id="employeeForm">
       <div class="columns" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">
         <div class="field"><label for="employeeName">اسم الموظف</label><input id="employeeName" required maxlength="120" placeholder="اسم الموظف"></div>
-        <div class="field"><label for="employeePhone">رقم جوال الموظف (اسم الدخول)</label><input id="employeePhone" required type="tel" inputmode="tel" autocomplete="tel" placeholder="05xxxxxxxx" maxlength="20"></div>
+        <div class="field"><label for="employeeEmail">البريد الإلكتروني للموظف (اسم الدخول)</label><input id="employeeEmail" required type="email" inputmode="email" autocomplete="email" placeholder="employee@example.com" maxlength="254"></div>
         <div class="field"><label for="employeePassword">كلمة المرور</label><input id="employeePassword" required type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="٦ أحرف على الأقل"></div>
         <div class="field"><label for="employeeRole">الصلاحية</label><select id="employeeRole" required><option value="booking_employee">موظف حجوزات</option><option value="reception">مسؤول استقبال ومسح QR</option></select></div>
         <div class="field"><label for="employeeCode">رمز الموظف (اختياري)</label><input id="employeeCode" maxlength="40" placeholder="مثال: EMP-02"></div>
       </div>
       <button id="addEmployeeBtn" type="submit">إضافة الموظف</button>
     </form>
-    <div class="notice">ملاحظة: رقم الجوال السعودي يجب أن يكون صحيحًا وغير مستخدم لحساب آخر. لا تظهر كلمة المرور في قائمة الموظفين.</div>
-    <div class="table-wrap" style="margin-top:12px"><table style="min-width:650px"><thead><tr><th>الاسم</th><th>رقم الجوال</th><th>الدور</th><th>رمز الموظف</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="employeeRows"><tr><td colspan="6" class="empty">جارٍ تحميل الموظفين…</td></tr></tbody></table></div>
+    <div class="notice">ملاحظة: يجب أن يكون البريد الإلكتروني صحيحًا وغير مستخدم لحساب آخر. لا تظهر كلمة المرور في قائمة الموظفين.</div>
+    <div class="table-wrap" style="margin-top:12px"><table style="min-width:650px"><thead><tr><th>الاسم</th><th>البريد الإلكتروني</th><th>الدور</th><th>رمز الموظف</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="employeeRows"><tr><td colspan="6" class="empty">جارٍ تحميل الموظفين…</td></tr></tbody></table></div>
   </section>
 
   <section id="qrPanel" class="qr-modal hidden" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
@@ -209,7 +209,7 @@ async function loadEmployees(){
  if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='لا يوجد موظفون.';tr.append(td);body.append(tr);return}
  for(const e of rows){
   const tr=document.createElement('tr');
-  for(const v of [e.display_name,e.phone||'—',(e.role==='supervisor'?'مشرف':e.role==='reception'?'مسؤول استقبال ومسح QR':e.role==='booking_employee'?'موظف حجوزات':e.role),e.employee_code||'—',e.is_active?'نشط':'موقوف']){
+  for(const v of [e.display_name,e.email||'—',(e.role==='supervisor'?'مشرف':e.role==='reception'?'مسؤول استقبال ومسح QR':e.role==='booking_employee'?'موظف حجوزات':e.role),e.employee_code||'—',e.is_active?'نشط':'موقوف']){
    const td=document.createElement('td');td.textContent=v;tr.append(td)
   }
   const td=document.createElement('td');
@@ -319,13 +319,11 @@ $('unifiedLoginForm').addEventListener('submit',async e=>{
  const btn=$('unifiedLoginBtn');
  btn.disabled=true;btn.textContent='جارٍ التحقق…';
  hideMessage('loginMessage');
- const identifier=$('loginIdentifier').value.trim(),password=$('unifiedPassword').value;
+ const identifier=$('loginIdentifier').value.trim().toLowerCase(),password=$('unifiedPassword').value;
  try{
   message('loginMessage','تم إرسال طلب الدخول…','');
-  let credentials;
-  if(identifier.includes('@')) credentials={email:identifier,password};
-  else {const phone=normalizeSaudiPhone(identifier);credentials=phone==='+966579820107'?{email:'rayyanhatif@gmail.com',password}:{phone,password};}
-  const {error}=await supabase.auth.signInWithPassword(credentials);
+  if(!identifier.includes('@'))throw new Error('أدخل البريد الإلكتروني المسجل للحساب.');
+  const {error}=await supabase.auth.signInWithPassword({email:identifier,password});
   if(error)throw new Error('فشل التحقق من بيانات الدخول: '+error.message);
   message('loginMessage','تم التحقق. جارٍ تحميل بيانات الموظف…','');
   await loadSession();
