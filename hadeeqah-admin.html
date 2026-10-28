@@ -208,7 +208,7 @@ async function loadEmployees(){
  if(!rows||!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='لا يوجد موظفون.';tr.append(td);body.append(tr);return}
  for(const e of rows){
   const tr=document.createElement('tr');
-  for(const v of [e.display_name,e.phone||'—',roleLabel(e.role),e.employee_code||'—',e.is_active?'نشط':'موقوف']){
+  for(const v of [e.display_name,e.phone||'—',(e.role==='supervisor'?'مشرف':e.role==='reception'?'مسؤول استقبال ومسح QR':e.role==='booking_employee'?'موظف حجوزات':e.role),e.employee_code||'—',e.is_active?'نشط':'موقوف']){
    const td=document.createElement('td');td.textContent=v;tr.append(td)
   }
   const td=document.createElement('td');
