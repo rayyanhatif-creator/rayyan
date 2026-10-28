@@ -287,17 +287,26 @@ function normalizeSaudiPhone(raw){
  return '+'+digits;
 }
 $('unifiedLoginForm').addEventListener('submit',async e=>{
- e.preventDefault();const btn=$('unifiedLoginBtn');btn.disabled=true;btn.textContent='جارٍ الدخول…';hideMessage('loginMessage');
+ e.preventDefault();
+ const btn=$('unifiedLoginBtn');
+ btn.disabled=true;btn.textContent='جارٍ التحقق…';
+ hideMessage('loginMessage');
+ const identifier=$('loginIdentifier').value.trim(),password=$('unifiedPassword').value;
  try{
-  const identifier=$('loginIdentifier').value.trim(),password=$('unifiedPassword').value;
+  message('loginMessage','تم إرسال طلب الدخول…','');
   let credentials;
   if(identifier.includes('@')) credentials={email:identifier,password};
   else {const phone=normalizeSaudiPhone(identifier);credentials=phone==='+966579820107'?{email:'rayyanhatif@gmail.com',password}:{phone,password};}
   const {error}=await supabase.auth.signInWithPassword(credentials);
-  if(error)throw error;
+  if(error)throw new Error('فشل التحقق من بيانات الدخول: '+error.message);
+  message('loginMessage','تم التحقق. جارٍ تحميل بيانات الموظف…','');
   await loadSession();
- }catch(err){message('loginMessage',err.message||'تعذر تسجيل الدخول. تحقق من رقم الجوال أو البريد وكلمة المرور.','error')}
- finally{btn.disabled=false;btn.textContent='دخول إلى النظام'}
+ }catch(err){
+  showLogin();
+  message('loginMessage','تعذر إكمال الدخول: '+(err?.message||String(err)),'error');
+ }finally{
+  btn.disabled=false;btn.textContent='دخول إلى النظام';
+ }
 });
 
 $('bookingForm').addEventListener('submit',async e=>{
