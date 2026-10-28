@@ -182,6 +182,9 @@ async function loadSession(){
  const {data:co,error:companyError}=await supabase.from('hadeeqah_companies').select('*').eq('id',employee.company_id).maybeSingle();
  if(companyError) throw companyError;
  company=co;
+ const {data:priceRows,error:priceError}=await supabase.from('hadeeqah_pricing_rules').select('*').eq('company_id',employee.company_id).eq('is_active',true);
+ if(priceError) throw new Error('تعذر تحميل التسعيرة: '+priceError.message);
+ pricing=priceRows||[];
  if(!company) throw new Error('تعذر العثور على الشركة المرتبطة بالحساب.');
  $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
  $('roleBadge').textContent=employee.role==='supervisor'?'مشرف':employee.role==='reception'?'مسؤول استقبال ومسح QR':'موظف حجوزات';
@@ -317,7 +320,7 @@ async function loadBookings(){
 function message(id,text,type=''){const el=$(id);el.textContent=text;el.className='notice'+(type?' '+type:'');el.classList.remove('hidden')}
 function hideMessage(id){$(id).classList.add('hidden')}
 function localDateISO(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
-function priceFor(date,count){if(!date||!count||count<1)return null;const d=new Date(date+'T12:00:00');const dow=d.getDay();const rule=pricing.find(r=>r.is_active&&r.days_of_week.includes(dow)&&(!r.valid_from||date>=r.valid_from)&&(!r.valid_until||date<=r.valid_until));if(!rule)return null;return {amount:Number(rule.base_price)+Math.max(0,count-Number(rule.included_people))*Number(rule.extra_person_price),rule};}
+function priceFor(date,count){if(!date||!Number.isInteger(count)||count<1)return null;const d=new Date(date+'T12:00:00');const dow=d.getDay();const rule=pricing.find(r=>r.is_active&&Array.isArray(r.days_of_week)&&r.days_of_week.some(day=>Number(day)===dow)&&(!r.valid_from||date>=String(r.valid_from).slice(0,10))&&(!r.valid_until||date<=String(r.valid_until).slice(0,10)));if(!rule)return null;return {amount:Number(rule.base_price)+Math.max(0,count-Number(rule.included_people))*Number(rule.extra_person_price),rule};}
 function refreshPrice(){const count=Number($('partySize').value);const result=priceFor($('visitDate').value,count);const editing=$('manualPriceWrap')&&!$('manualPriceWrap').classList.contains('hidden');const raw=$('manualPrice').value.trim();const manual=editing&&raw!==''?Number(raw):null;if(manual!==null&&Number.isFinite(manual)&&manual>=0){$('pricePreview').textContent='السعر بعد التعديل: '+money(manual)+(result?' — السعر الأصلي: '+money(result.amount):' — سعر يدوي للحجز');return}if(result){$('pricePreview').textContent='السعر المتوقع: '+money(result.amount)+' — '+(result.rule.rule_name||'حسب التسعيرة المعتمدة');return}$('pricePreview').textContent=editing?'أدخل السعر النهائي بعد الخصم أو التعديل.':'اختر تاريخ الزيارة وعدد الأشخاص لاحتساب السعر، أو اضغط تعديل السعر لإدخال سعر يدوي.'}
  $('togglePriceEditBtn').addEventListener('click',()=>{const wrap=$('manualPriceWrap');const opening=wrap.classList.contains('hidden');wrap.classList.toggle('hidden');if(opening){const result=priceFor($('visitDate').value,Number($('partySize').value));$('manualPrice').value=result?String(result.amount):'';$('manualPrice').focus()}else $('manualPrice').value='';refreshPrice()});
  $('cancelPriceEditBtn').addEventListener('click',()=>{$('manualPriceWrap').classList.add('hidden');$('manualPrice').value='';refreshPrice()});
@@ -361,8 +364,14 @@ $('bookingForm').addEventListener('submit',async e=>{
   if(!['booking_employee','supervisor'].includes(employee?.role)&&!(employee?.role==='reception'&&$('bookingPanel').dataset.receptionOpened==='true'))throw new Error('صلاحيتك الحالية لا تسمح بإنشاء الحجوزات.');
   const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),date=$('visitDate').value,count=Number($('partySize').value),result=priceFor(date,count),manualEnabled=!$('manualPriceWrap').classList.contains('hidden')&&$('manualPrice').value.trim()!=='';
   if(!name||!date||!Number.isInteger(count)||count<1||count>100)throw new Error('تأكد من اسم الزائر وتاريخ الزيارة وعدد الأشخاص.');
-  if(!result)throw new Error('لا توجد تسعيرة فعالة لهذا اليوم. راجع المشرف.');
-  const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value.trim()||null,party_size:count,amount_due:result.amount,amount_paid:0,price_rule_snapshot:{rule_name:result.rule.rule_name,base_price:Number(result.rule.base_price),included_people:Number(result.rule.included_people),extra_person_price:Number(result.rule.extra_person_price),party_size:count,amount_due:result.amount,currency:'SAR'},payment_status:'unpaid',booking_status:'pending',created_by:employee.id}).select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due').single();
+  const editingPrice=!$('manualPriceWrap').classList.contains('hidden');
+  const manualRaw=$('manualPrice').value.trim();
+  const useManual=editingPrice&&manualRaw!=='';
+  if(!result&&!useManual)throw new Error('لا توجد تسعيرة فعالة لهذا اليوم. اضغط «تعديل السعر» وأدخل السعر يدويًا، أو راجع المشرف.');
+  const finalAmount=useManual?Number(manualRaw):result.amount;
+  if(!Number.isFinite(finalAmount)||finalAmount<0||finalAmount>1000000)throw new Error('أدخل سعرًا صحيحًا بين 0 و1,000,000 ريال.');
+  const snapshot=useManual?{rule_name:'سعر يدوي',manual_price_override:true,party_size:count,amount_due:finalAmount,currency:'SAR'}:{rule_name:result.rule.rule_name,base_price:Number(result.rule.base_price),included_people:Number(result.rule.included_people),extra_person_price:Number(result.rule.extra_person_price),party_size:count,amount_due:finalAmount,currency:'SAR'};
+  const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value.trim()||null,party_size:count,amount_due:finalAmount,amount_paid:0,price_rule_snapshot:snapshot,payment_status:'unpaid',booking_status:'pending',created_by:employee.id}).select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due').single();
   if(error)throw error;
   const token=randomToken(),tokenHash=await sha256(token);
   const {error:qrError}=await supabase.rpc('hadeeqah_assign_qr_token',{p_booking_id:booking.id,p_token_hash:tokenHash});
