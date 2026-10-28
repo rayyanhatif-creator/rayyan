@@ -428,7 +428,7 @@ $('employeeForm').addEventListener('submit',async e=>{
  try{
   const payload={
    display_name:$('employeeName').value.trim(),
-   phone:$('employeePhone').value.trim(),
+   email:$('employeeEmail').value.trim().toLowerCase(),
    password:$('employeePassword').value,
    role:$('employeeRole').value,
    employee_code:$('employeeCode').value.trim()
