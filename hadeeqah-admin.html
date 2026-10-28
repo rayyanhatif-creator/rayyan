@@ -126,41 +126,8 @@
     </div>
   </section>
 </div>
-<script>
-/* Fallback guard: prevent the browser from clearing the login form if the module fails to load. */
-window.__hadeeqahModuleReady = false;
-document.addEventListener('submit', function(event) {
-  if (event.target && event.target.id === 'unifiedLoginForm' && !window.__hadeeqahModuleReady) {
-    var box = document.getElementById('loginMessage');
-    if (box) {
-      box.textContent = 'تعذر تشغيل مكوّن تسجيل الدخول في الصفحة. حدّث الصفحة أو افتح الرابط في Safari مباشرة، وإذا استمرت المشكلة نحتاج فحص خطأ تحميل الصفحة.';
-      box.className = 'notice error';
-      box.classList.remove('hidden');
-    }
-  }
-}, true);
-window.addEventListener('error', function() {
-  if (!window.__hadeeqahModuleReady) {
-    var box = document.getElementById('loginMessage');
-    if (box) {
-      box.textContent = 'حدث خطأ أثناء تشغيل الصفحة؛ لم يتم إرسال بيانات الدخول.';
-      box.className = 'notice error';
-      box.classList.remove('hidden');
-    }
-  }
-});
-window.addEventListener('unhandledrejection', function() {
-  if (!window.__hadeeqahModuleReady) {
-    var box = document.getElementById('loginMessage');
-    if (box) {
-      box.textContent = 'تعذر تحميل أحد مكونات الصفحة. حدّث الصفحة ثم جرّب مجددًا.';
-      box.className = 'notice error';
-      box.classList.remove('hidden');
-    }
-  }
-});
-</script>
-<script type="module" onerror="(function(){var b=document.getElementById('loginMessage');if(b){b.textContent='تعذر تحميل مكتبة تسجيل الدخول من الإنترنت. جرّب فتح الرابط في Safari وتأكد من اتصال الإنترنت.';b.className='notice error';b.classList.remove('hidden');}})()">
+
+<script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 let QRCode=null, jsQR=null;
 async function getQRCode(){if(!QRCode){const mod=await import('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm');QRCode=mod.default;}return QRCode;}
