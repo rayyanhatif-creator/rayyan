@@ -139,10 +139,10 @@ window.addEventListener('error', function(event) {
   } catch (_) {}
 });
 </script>
-<script src="https://unpkg.com/@supabase/supabase-js@2" onerror="document.getElementById('loginMessage').textContent='تعذر تحميل مكتبة تسجيل الدخول من الخادم. تحقق من الاتصال ثم أعد فتح الرابط.';document.getElementById('loginMessage').className='notice error';document.getElementById('loginMessage').classList.remove('hidden');"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" onerror="document.getElementById('loginMessage').textContent='تعذر تحميل مكتبة تسجيل الدخول من الخادم. تحقق من الاتصال ثم أعد فتح الرابط.';document.getElementById('loginMessage').className='notice error';document.getElementById('loginMessage').classList.remove('hidden');"></script>
 <script>
 const createClient = window.supabase?.createClient;
-if (typeof createClient !== 'function') { const el=document.getElementById('loginMessage'); if(el){el.textContent='تعذر تحميل مكتبة تسجيل الدخول من الخادم. لم يتم إرسال بيانات الدخول.';el.className='notice error';el.classList.remove('hidden');} }
+if (typeof createClient !== 'function') { const el=document.getElementById('loginMessage'); if(el){el.textContent='تعذر تحميل مكتبة تسجيل الدخول؛ لم يتم إرسال بيانات الدخول. أعد فتح الصفحة بعد قليل.';el.className='notice error';el.classList.remove('hidden');} throw new Error('Supabase client library did not load'); }
 let QRCode=null, jsQR=null;
 async function getQRCode(){if(!QRCode){const mod=await import('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm');QRCode=mod.default;}return QRCode;}
 async function getJsQR(){if(!jsQR){const mod=await import('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm');jsQR=mod.default;}return jsQR;}
