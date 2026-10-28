@@ -186,6 +186,7 @@ async function loadSession(){
   try{if(typeof loadReports==='function')await loadReports()}catch(err){message('appMessage','تعذر تحميل التقارير المالية: '+(err.message||'خطأ غير معروف'),'error')}
   try{if(typeof loadAuditLogs==='function')await loadAuditLogs()}catch(err){message('appMessage','تعذر تحميل سجل الحركة: '+(err.message||'خطأ غير معروف'),'error')}
  }
+}
 
 const money=n=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:'SAR',maximumFractionDigits:0}).format(Number(n||0));
 async function loadEmployees(){
