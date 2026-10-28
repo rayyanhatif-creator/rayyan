@@ -128,7 +128,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script type="module">
+<script>
 const createClient = window.supabase?.createClient;
 if (typeof createClient !== 'function') throw new Error('تعذر تحميل مكتبة تسجيل الدخول.');
 let QRCode=null, jsQR=null;
@@ -400,7 +400,7 @@ $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if([
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((event,session)=>{if(session)return;if(event==='SIGNED_OUT'){sessionUser=null;employee=null;company=null;showLogin()}});
 window.__hadeeqahModuleReady = true;
-try{await loadSession();if(sessionUser&&employee)restoreDashboardPosition()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}
+(async()=>{try{await loadSession();if(sessionUser&&employee)restoreDashboardPosition()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}})();
 </script>
 </body>
 </html>
