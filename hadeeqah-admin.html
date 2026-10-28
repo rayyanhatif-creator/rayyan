@@ -233,9 +233,9 @@ async function loadEmployees(){
  }
 }
 
-$('addVisitorBtn').addEventListener('click',()=>{if(!['reception','supervisor'].includes(employee?.role))return;$('bookingPanel').classList.remove('hidden');$('bookingPanel').dataset.receptionOpened='true';$('bookingPanel').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$('customerName').focus(),250)});
-$('jumpTodayBtn').addEventListener('click',()=>{$('todayBookingsInline').scrollIntoView({behavior:'smooth',block:'start'})});
-$('jumpScannerBtn').addEventListener('click',()=>{$('scannerPanel').scrollIntoView({behavior:'smooth',block:'start'});$('startScanBtn').focus({preventScroll:true})});
+$('addVisitorBtn')?.addEventListener('click',()=>{if(!['reception','supervisor'].includes(employee?.role))return;$('bookingPanel').classList.remove('hidden');$('bookingPanel').dataset.receptionOpened='true';$('bookingPanel').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$('customerName').focus(),250)});
+$('jumpTodayBtn')?.addEventListener('click',()=>{$('todayBookingsInline').scrollIntoView({behavior:'smooth',block:'start'})});
+$('jumpScannerBtn')?.addEventListener('click',()=>{$('scannerPanel').scrollIntoView({behavior:'smooth',block:'start'});$('startScanBtn').focus({preventScroll:true})});
 
 async function loadTodayBookings(){
  const body=$('todayBookingRowsInline');body.replaceChildren();
