@@ -126,6 +126,41 @@
     </div>
   </section>
 </div>
+<script>
+/* Fallback guard: prevent the browser from clearing the login form if the module fails to load. */
+window.__hadeeqahModuleReady = false;
+document.addEventListener('submit', function(event) {
+  if (event.target && event.target.id === 'unifiedLoginForm' && !window.__hadeeqahModuleReady) {
+    event.preventDefault();
+    var box = document.getElementById('loginMessage');
+    if (box) {
+      box.textContent = 'تعذر تشغيل مكوّن تسجيل الدخول في الصفحة. حدّث الصفحة أو افتح الرابط في Safari مباشرة، وإذا استمرت المشكلة نحتاج فحص خطأ تحميل الصفحة.';
+      box.className = 'notice error';
+      box.classList.remove('hidden');
+    }
+  }
+}, true);
+window.addEventListener('error', function() {
+  if (!window.__hadeeqahModuleReady) {
+    var box = document.getElementById('loginMessage');
+    if (box) {
+      box.textContent = 'حدث خطأ أثناء تشغيل الصفحة؛ لم يتم إرسال بيانات الدخول.';
+      box.className = 'notice error';
+      box.classList.remove('hidden');
+    }
+  }
+});
+window.addEventListener('unhandledrejection', function() {
+  if (!window.__hadeeqahModuleReady) {
+    var box = document.getElementById('loginMessage');
+    if (box) {
+      box.textContent = 'تعذر تحميل أحد مكونات الصفحة. حدّث الصفحة ثم جرّب مجددًا.';
+      box.className = 'notice error';
+      box.classList.remove('hidden');
+    }
+  }
+});
+</script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 let QRCode=null, jsQR=null;
@@ -396,6 +431,7 @@ async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type
 $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs()}message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((event,session)=>{if(session)return;if(event==='SIGNED_OUT'){sessionUser=null;employee=null;company=null;showLogin()}});
+window.__hadeeqahModuleReady = true;
 try{await loadSession();if(sessionUser&&employee)restoreDashboardPosition()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}
 </script>
 </body>
