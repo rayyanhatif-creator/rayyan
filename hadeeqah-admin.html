@@ -128,15 +128,26 @@
 </div>
 
 <script>
-window.addEventListener('error', function(event) {
+function showStartupError(text){
   try {
-    const el = document.getElementById('loginMessage');
-    if (el) {
-      el.textContent = 'خطأ تقني في الصفحة: ' + (event.message || 'تعذر تحميل أحد ملفات النظام') + (event.filename ? ' — الملف: ' + event.filename.split('/').pop() : '') + (event.lineno ? ' — السطر: ' + event.lineno : '');
-      el.className = 'notice error';
-      el.classList.remove('hidden');
-    }
+    const el=document.getElementById('loginMessage');
+    if(el){el.textContent=text;el.className='notice error';el.classList.remove('hidden');}
   } catch (_) {}
+}
+window.addEventListener('error', function(event) {
+  // Script-load errors expose the failing element even when the browser hides cross-origin details.
+  const target=event.target;
+  if(target && target.tagName==='SCRIPT'){
+    showStartupError('تعذر تحميل ملف مطلوب لتشغيل النظام: '+(target.src||'ملف JavaScript')+'. تحقق من الاتصال ثم أعد فتح الصفحة.');
+    return;
+  }
+  const details=event.error && event.error.stack ? event.error.stack.split('\\n')[0] : event.message;
+  if(details && details!=='Script error.') showStartupError('خطأ تقني في الصفحة: '+details+(event.lineno?' — السطر: '+event.lineno:''));
+}, true);
+window.addEventListener('unhandledrejection', function(event){
+  const reason=event.reason;
+  const details=reason && (reason.message||String(reason));
+  showStartupError('تعذر إكمال عملية في النظام: '+(details||'خطأ غير معروف'));
 });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" onerror="document.getElementById('loginMessage').textContent='تعذر تحميل مكتبة تسجيل الدخول من الخادم. تحقق من الاتصال ثم أعد فتح الرابط.';document.getElementById('loginMessage').className='notice error';document.getElementById('loginMessage').classList.remove('hidden');"></script>
