@@ -98,17 +98,18 @@
   </section>
   <section id="employeePanel" class="panel hidden" style="margin-top:16px">
     <h3>إدارة الموظفين والصلاحيات</h3>
-    <p class="muted">أضف حسابًا موجودًا في النظام وحدد دوره، أو عدّل صلاحيات الموظفين الحاليين. لا تشارك كلمات المرور.</p>
+    <p class="muted">أنشئ حساب الموظف بنفسك: أدخل الاسم ورقم الجوال وكلمة المرور والصلاحية ورمز الموظف الذي تختاره. يستخدم الموظف رقم جواله وكلمة المرور لتسجيل الدخول.</p>
     <form id="employeeForm">
       <div class="columns" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">
         <div class="field"><label for="employeeName">اسم الموظف</label><input id="employeeName" required maxlength="120" placeholder="اسم الموظف"></div>
-        <div class="field"><label for="employeePhone">رقم جوال الموظف</label><input id="employeePhone" required type="tel" inputmode="tel" placeholder="05xxxxxxxx" maxlength="20"></div>
+        <div class="field"><label for="employeePhone">رقم جوال الموظف (اسم الدخول)</label><input id="employeePhone" required type="tel" inputmode="tel" autocomplete="tel" placeholder="05xxxxxxxx" maxlength="20"></div>
+        <div class="field"><label for="employeePassword">كلمة المرور</label><input id="employeePassword" required type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="٦ أحرف على الأقل"></div>
         <div class="field"><label for="employeeRole">الصلاحية</label><select id="employeeRole" required><option value="booking_employee">موظف حجوزات</option><option value="reception">مسؤول استقبال ومسح QR</option></select></div>
         <div class="field"><label for="employeeCode">رمز الموظف (اختياري)</label><input id="employeeCode" maxlength="40" placeholder="مثال: EMP-02"></div>
       </div>
       <button id="addEmployeeBtn" type="submit">إضافة الموظف</button>
     </form>
-    <div class="notice">تنبيه: يجب أن يكون للموظف حساب دخول موجود في Supabase Auth وكلمة مرور معدّة مسبقًا قبل ربطه هنا. هذه الشاشة لا تنشئ حساب Auth جديدًا.</div>
+    <div class="notice">ملاحظة: رقم الجوال السعودي يجب أن يكون صحيحًا وغير مستخدم لحساب آخر. لا تظهر كلمة المرور في قائمة الموظفين.</div>
     <div class="table-wrap" style="margin-top:12px"><table style="min-width:650px"><thead><tr><th>الاسم</th><th>رقم الجوال</th><th>الدور</th><th>رمز الموظف</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="employeeRows"><tr><td colspan="6" class="empty">جارٍ تحميل الموظفين…</td></tr></tbody></table></div>
   </section>
 
@@ -419,6 +420,31 @@ async function stopScanner(){scanActive=false;if(scanStream){scanStream.getTrack
 $('stopScanBtn').addEventListener('click',stopScanner);
 $('startScanBtn').addEventListener('click',async()=>{hideMessage('scanMessage');if(!['reception','supervisor'].includes(employee?.role)){message('scanMessage','هذه الصفحة مخصصة للاستقبال والمشرف.','error');return}try{await stopScanner();scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});const video=$('scanVideo');video.srcObject=scanStream;video.classList.remove('hidden');await video.play();scanActive=true;const canvas=$('scanCanvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});const tick=async()=>{if(!scanActive)return;if(video.readyState>=2){canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.drawImage(video,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);const decode=await getJsQR();const code=decode(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'});if(code?.data){scanActive=false;await stopScanner();await processScannedQr(code.data);return}}requestAnimationFrame(tick)};requestAnimationFrame(tick)}catch(err){message('scanMessage','تعذر تشغيل الكاميرا. تأكد من السماح باستخدام الكاميرا وفتح الموقع عبر HTTPS. '+(err.message||''),'error')}});
 async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type!=='hadeeqah-booking'||!data.bookingId||!data.token)throw new Error('هذا ليس رمز حجز صالحًا.');const {data:before,error:beforeError}=await supabase.from('hadeeqah_bookings').select('booking_number,customer_name,party_size,amount_due,amount_paid,payment_status,booking_status,visit_date,visit_time').eq('id',data.bookingId).eq('company_id',company.id).maybeSingle();if(beforeError)throw beforeError;if(!before)throw new Error('الحجز غير موجود في شركتك.');const tokenHash=await sha256(data.token);const {data:checked,error}=await supabase.rpc('hadeeqah_checkin',{p_booking_id:data.bookingId,p_token_hash:tokenHash});if(error){const msg=error.message||'';if(/استُخدم سابقًا|سبق|غير صحيح|ملغي/.test(msg))throw new Error('سبق استخدام الباركود أو انتهت صلاحيته أو أن الحجز ملغي. اطلب بطاقة QR جديدة من موظف الحجوزات.');throw error}const item=Array.isArray(checked)?checked[0]:checked;if(!item)throw new Error('لم يتم العثور على الحجز.');const remaining=Math.max(0,Number(before.amount_due||0)-Number(before.amount_paid||0));const paymentNote=remaining>0?' — تنبيه: متبقي '+money(remaining)+' غير مسدد. يرجى تحصيله نقدًا من موظف الحجوزات أو المشرف.':' — السداد مكتمل';message('scanMessage','تم تسجيل وصول الزائر بنجاح! الزائر: '+item.customer_name+' — رقم الحجز: '+item.booking_number+' — عدد الأشخاص: '+item.party_size+paymentNote,'ok');await loadBookings();await loadTodayBookings()}catch(err){message('scanMessage',err.message||'تعذر التحقق من الرمز.','error')}}
+
+
+$('employeeForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(employee?.role!=='supervisor'){message('appMessage','إضافة الموظفين متاحة للمشرف فقط.','error');return}
+ const btn=$('addEmployeeBtn'),original=btn.textContent;
+ btn.disabled=true;btn.textContent='جارٍ إنشاء حساب الموظف…';
+ try{
+  const payload={
+   display_name:$('employeeName').value.trim(),
+   phone:$('employeePhone').value.trim(),
+   password:$('employeePassword').value,
+   role:$('employeeRole').value,
+   employee_code:$('employeeCode').value.trim()
+  };
+  if(payload.password.length<6)throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل.');
+  const {data,error}=await supabase.functions.invoke('hadeeqah-create-employee',{body:payload});
+  if(error)throw new Error(data?.error||error.message||'تعذر إنشاء حساب الموظف.');
+  if(data?.error)throw new Error(data.error);
+  $('employeeForm').reset();
+  await loadEmployees();
+  message('appMessage',data?.message||'تم إنشاء حساب الموظف بنجاح.','ok');
+ }catch(err){message('appMessage',err?.message||'تعذر إنشاء حساب الموظف.','error')}
+ finally{btn.disabled=false;btn.textContent=original}
+});
 
 $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs()}message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
