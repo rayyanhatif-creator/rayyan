@@ -131,7 +131,6 @@
 window.__hadeeqahModuleReady = false;
 document.addEventListener('submit', function(event) {
   if (event.target && event.target.id === 'unifiedLoginForm' && !window.__hadeeqahModuleReady) {
-    event.preventDefault();
     var box = document.getElementById('loginMessage');
     if (box) {
       box.textContent = 'تعذر تشغيل مكوّن تسجيل الدخول في الصفحة. حدّث الصفحة أو افتح الرابط في Safari مباشرة، وإذا استمرت المشكلة نحتاج فحص خطأ تحميل الصفحة.';
