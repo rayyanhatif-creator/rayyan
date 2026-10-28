@@ -518,7 +518,7 @@ $('employeeForm').addEventListener('submit',async e=>{
   $('employeeForm').reset();
   await loadEmployees();
   message('appMessage',data?.message||'تم إنشاء حساب الموظف بنجاح.','ok');
- }catch(err){message('appMessage',err?.message||'تعذر إنشاء حساب الموظف.','error')}
+ }catch(err){let reason=err?.message||'تعذر إنشاء حساب الموظف.';try{if(err?.context&&typeof err.context.json==='function'){const detail=await err.context.clone().json();if(detail?.error)reason=detail.error;else if(detail?.message)reason=detail.message}}catch(_){}const notice='تعذر إنشاء الموظف: '+reason;message('appMessage',notice,'error');$('appMessage').scrollIntoView({behavior:'smooth',block:'center'});alert(notice)}
  finally{btn.disabled=false;btn.textContent=original}
 });
 
