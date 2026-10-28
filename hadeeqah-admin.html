@@ -72,7 +72,7 @@
         <div class="field"><label for="visitDate">تاريخ الزيارة</label><input id="visitDate" type="date" required></div>
         <div class="field"><label for="visitTime">وقت الزيارة (اختياري)</label><input id="visitTime" type="text" maxlength="40" placeholder="مثال: 5:30 مساءً"></div>
         <div class="field"><label for="partySize">عدد الأشخاص</label><input id="partySize" type="number" min="1" max="100" value="2" required></div>
-        <div class="field"><label for="initialPaymentStatus">حالة الدفع عند تسجيل الحجز</label><select id="initialPaymentStatus"><option value="unpaid">لم يتم السداد — يُحصّل لاحقًا</option><option value="cash_paid">تم السداد كاش</option></select><small>اختيار «تم السداد كاش» يسجّل المبلغ كاملًا كتحصيل نقدي.</small></div>
+        <div class="field"><label for="initialPaymentStatus">حالة الدفع عند تسجيل الحجز</label><select id="initialPaymentStatus"><option value="unpaid">لم يتم السداد — يُحصّل لاحقًا</option><option value="paid">تم السداد عبر تاب</option></select><small>اختر «تم السداد عبر تاب» بعد التأكد من نجاح عملية الدفع في Tap.</small></div>
         <div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap"><div class="notice" id="pricePreview" style="flex:1;min-width:190px;margin-top:14px">السعر المتوقع: —</div><button id="togglePriceEditBtn" type="button" class="secondary" style="margin-top:14px;white-space:nowrap">تعديل السعر</button></div>
         <div id="manualPriceWrap" class="field hidden"><label for="manualPrice">السعر المعدّل (ريال)</label><input id="manualPrice" type="number" min="0" max="1000000" step="0.01" placeholder="أدخل السعر الجديد"><small>سيُحفظ هذا المبلغ لهذا الحجز فقط، ولن يغيّر التسعيرة العامة.</small><button id="cancelPriceEditBtn" type="button" class="secondary">إلغاء تعديل السعر</button></div>
         <button id="createBookingBtn" type="submit" class="full">حفظ الحجز</button>
@@ -391,10 +391,8 @@ $('bookingForm').addEventListener('submit',async e=>{
   if(!Number.isFinite(finalAmount)||finalAmount<0||finalAmount>1000000)throw new Error('أدخل سعرًا صحيحًا بين 0 و1,000,000 ريال.');
   const snapshot=useManual?{rule_name:'سعر يدوي',manual_price_override:true,party_size:count,amount_due:finalAmount,currency:'SAR'}:{rule_name:result.rule.rule_name,base_price:Number(result.rule.base_price),included_people:Number(result.rule.included_people),extra_person_price:Number(result.rule.extra_person_price),party_size:count,amount_due:finalAmount,currency:'SAR'};
   const initialPayment=$('initialPaymentStatus').value;
-  const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value.trim()||null,party_size:count,amount_due:finalAmount,amount_paid:0,price_rule_snapshot:snapshot,payment_status:'unpaid',booking_status:'pending',created_by:employee.id}).select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due').single();
+  const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value.trim()||null,party_size:count,amount_due:finalAmount,amount_paid:initialPayment==='paid'?finalAmount:0,price_rule_snapshot:snapshot,payment_status:initialPayment==='paid'?'paid':'unpaid',booking_status:'pending',created_by:employee.id}).select('id,booking_number,customer_name,customer_phone,visit_date,visit_time,party_size,amount_due').single();
   if(error)throw error;
-  let cashPaymentWarning='';
-  if(initialPayment==='cash_paid'&&finalAmount>0){const {error:cashError}=await supabase.rpc('hadeeqah_record_cash_payment',{p_booking_id:booking.id,p_amount:finalAmount});if(cashError)cashPaymentWarning=' تم حفظ الحجز، لكن تعذر تسجيل السداد النقدي: '+cashError.message+' — سجّل السداد من قائمة الحجوزات.';}
   const token=randomToken(),tokenHash=await sha256(token);
   const {error:qrError}=await supabase.rpc('hadeeqah_assign_qr_token',{p_booking_id:booking.id,p_token_hash:tokenHash});
   $('bookingForm').reset();$('manualPriceWrap').classList.add('hidden');$('manualPrice').value='';$('visitDate').value=localDateISO();$('partySize').value='2';$('initialPaymentStatus').value='unpaid';refreshPrice();
@@ -402,7 +400,7 @@ $('bookingForm').addEventListener('submit',async e=>{
   if(['reception','supervisor'].includes(employee.role))await loadTodayBookings();
   if(employee.role==='supervisor'){await loadReports();await loadAuditLogs();}
   if(qrError){message('appMessage','تم حفظ الحجز رقم '+booking.booking_number+' لكن تعذر إصدار QR: '+qrError.message,'error');return;}
-  await showQr(booking,token);message('appMessage','تم حفظ الحجز وإصدار رمز QR بنجاح.'+(initialPayment==='cash_paid'&&finalAmount>0&&!cashPaymentWarning?' تم تسجيل السداد النقدي بالكامل.':'')+cashPaymentWarning,'ok');
+  await showQr(booking,token);message('appMessage','تم حفظ الحجز وإصدار رمز QR بنجاح.'+(initialPayment==='paid'?' وتم تسجيل أن المبلغ مسدد عبر تاب.':' المبلغ غير مسدد حتى الآن.'),'ok');
  }catch(err){message('appMessage',err.message||'تعذر حفظ الحجز.','error')}
  finally{btn.disabled=false;btn.textContent='حفظ الحجز'}
 });
