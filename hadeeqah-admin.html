@@ -161,8 +161,8 @@ window.addEventListener('unhandledrejection', function() {
   }
 });
 </script>
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+<script type="module" onerror="(function(){var b=document.getElementById('loginMessage');if(b){b.textContent='تعذر تحميل مكتبة تسجيل الدخول من الإنترنت. جرّب فتح الرابط في Safari وتأكد من اتصال الإنترنت.';b.className='notice error';b.classList.remove('hidden');}})()">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 let QRCode=null, jsQR=null;
 async function getQRCode(){if(!QRCode){const mod=await import('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm');QRCode=mod.default;}return QRCode;}
 async function getJsQR(){if(!jsQR){const mod=await import('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm');jsQR=mod.default;}return jsQR;}
