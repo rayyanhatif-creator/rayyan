@@ -127,8 +127,10 @@
   </section>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const createClient = window.supabase?.createClient;
+if (typeof createClient !== 'function') throw new Error('تعذر تحميل مكتبة تسجيل الدخول.');
 let QRCode=null, jsQR=null;
 async function getQRCode(){if(!QRCode){const mod=await import('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm');QRCode=mod.default;}return QRCode;}
 async function getJsQR(){if(!jsQR){const mod=await import('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm');jsQR=mod.default;}return jsQR;}
