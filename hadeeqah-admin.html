@@ -71,7 +71,8 @@
         <div class="field"><label for="visitDate">تاريخ الزيارة</label><input id="visitDate" type="date" required></div>
         <div class="field"><label for="visitTime">وقت الزيارة (اختياري)</label><input id="visitTime" type="text" maxlength="40" placeholder="مثال: 5:30 مساءً"></div>
         <div class="field"><label for="partySize">عدد الأشخاص</label><input id="partySize" type="number" min="1" max="100" value="2" required></div>
-        <div class="notice" id="pricePreview">السعر المتوقع: —</div>
+        <div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap"><div class="notice" id="pricePreview" style="flex:1;min-width:190px;margin-top:14px">السعر المتوقع: —</div><button id="togglePriceEditBtn" type="button" class="secondary" style="margin-top:14px;white-space:nowrap">تعديل السعر</button></div>
+        <div id="manualPriceWrap" class="field hidden"><label for="manualPrice">السعر المعدّل (ريال)</label><input id="manualPrice" type="number" min="0" max="1000000" step="0.01" placeholder="أدخل السعر الجديد"><small>سيُحفظ هذا المبلغ لهذا الحجز فقط، ولن يغيّر التسعيرة العامة.</small><button id="cancelPriceEditBtn" type="button" class="secondary">إلغاء تعديل السعر</button></div>
         <button id="createBookingBtn" type="submit" class="full">حفظ الحجز</button>
       </form>
     </section>
@@ -317,7 +318,10 @@ function message(id,text,type=''){const el=$(id);el.textContent=text;el.classNam
 function hideMessage(id){$(id).classList.add('hidden')}
 function localDateISO(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 function priceFor(date,count){if(!date||!count||count<1)return null;const d=new Date(date+'T12:00:00');const dow=d.getDay();const rule=pricing.find(r=>r.is_active&&r.days_of_week.includes(dow)&&(!r.valid_from||date>=r.valid_from)&&(!r.valid_until||date<=r.valid_until));if(!rule)return null;return {amount:Number(rule.base_price)+Math.max(0,count-Number(rule.included_people))*Number(rule.extra_person_price),rule};}
-function refreshPrice(){const count=Number($('partySize').value);const result=priceFor($('visitDate').value,count);$('pricePreview').textContent=result?'السعر المتوقع: '+money(result.amount)+' — '+(result.rule.rule_name||'حسب التسعيرة المعتمدة'):'اختر تاريخ الزيارة وعدد الأشخاص لاحتساب السعر.'}
+function refreshPrice(){const count=Number($('partySize').value);const result=priceFor($('visitDate').value,count);const manual=$('manualPriceWrap')&&!$('manualPriceWrap').classList.contains('hidden')&&$('manualPrice').value.trim()!==''?Number($('manualPrice').value):null;$('pricePreview').textContent=result?'السعر '+(manual!==null&&Number.isFinite(manual)&&manual>=0?'بعد التعديل: '+money(manual):'المتوقع: '+money(result.amount))+' — '+(result.rule.rule_name||'حسب التسعيرة المعتمدة'):'اختر تاريخ الزيارة وعدد الأشخاص لاحتساب السعر.'}
+ $('togglePriceEditBtn').addEventListener('click',()=>{const wrap=$('manualPriceWrap');wrap.classList.toggle('hidden');if(!wrap.classList.contains('hidden')){const result=priceFor($('visitDate').value,Number($('partySize').value));$('manualPrice').value=result?result.amount:'';$('manualPrice').focus()}else $('manualPrice').value='';refreshPrice()});
+ $('cancelPriceEditBtn').addEventListener('click',()=>{$('manualPriceWrap').classList.add('hidden');$('manualPrice').value='';refreshPrice()});
+ $('manualPrice').addEventListener('input',refreshPrice);
 $('visitDate').min=localDateISO();
 $('visitDate').value=localDateISO();
 $('partySize').addEventListener('input',refreshPrice);$('visitDate').addEventListener('change',refreshPrice);
@@ -362,7 +366,7 @@ $('bookingForm').addEventListener('submit',async e=>{
   if(error)throw error;
   const token=randomToken(),tokenHash=await sha256(token);
   const {error:qrError}=await supabase.rpc('hadeeqah_assign_qr_token',{p_booking_id:booking.id,p_token_hash:tokenHash});
-  $('bookingForm').reset();$('visitDate').value=localDateISO();$('partySize').value='2';refreshPrice();
+  $('bookingForm').reset();$('manualPriceWrap').classList.add('hidden');$('manualPrice').value='';$('visitDate').value=localDateISO();$('partySize').value='2';refreshPrice();
   await loadBookings();
   if(['reception','supervisor'].includes(employee.role))await loadTodayBookings();
   if(employee.role==='supervisor'){await loadReports();await loadAuditLogs();}
