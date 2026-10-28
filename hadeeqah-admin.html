@@ -275,6 +275,23 @@ async function loadReports(){
  }
 }
 
+function auditActionLabel(action){
+ const labels={
+  booking_created:'إنشاء حجز',
+  booking_updated:'تعديل حجز',
+  booking_arrived:'تسجيل وصول الزائر',
+  booking_checked_in:'تسجيل وصول الزائر',
+  cash_payment:'تسجيل سداد نقدي',
+  payment_received:'تسجيل سداد',
+  booking_cancelled:'إلغاء حجز',
+  employee_created:'إضافة موظف',
+  employee_updated:'تعديل بيانات موظف',
+  login:'تسجيل دخول'
+ };
+ const key=String(action||'').trim().toLowerCase();
+ return labels[key]||key.replace(/[_-]+/g,' ')||'عملية أخرى';
+}
+
 async function loadAuditLogs(){
  const body=$('auditRows');body.replaceChildren();
  const {data:rows,error}=await supabase.from('hadeeqah_audit_logs').select('id,actor_employee_id,action,booking_number,details,created_at').eq('company_id',company.id).order('created_at',{ascending:false}).limit(100);
