@@ -226,7 +226,7 @@ function applyPermissionVisibility(){
 }
 $('employeeRole').addEventListener('change',()=>{
  const role=$('employeeRole').value;
- const defaults=role==='reception'?['view_bookings','scan_qr','accept_payment']:['view_bookings','create_booking','manage_qr'];
+ const defaults=role==='reception'?['view_bookings','create_booking','manage_qr','scan_qr','accept_payment']:['view_bookings','create_booking','manage_qr'];
  document.querySelectorAll('.employee-permission').forEach(x=>x.checked=defaults.includes(x.value));
 });
 
