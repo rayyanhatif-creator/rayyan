@@ -199,12 +199,7 @@ async function loadSession(){
  if(!company) throw new Error('تعذر العثور على الشركة المرتبطة بالحساب.');
  $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
  $('roleBadge').textContent=employee.role==='supervisor'?'مشرف':employee.role==='reception'?'مسؤول استقبال ومسح QR':'موظف حجوزات';
- $('scannerPanel').classList.toggle('hidden',!['reception','supervisor'].includes(employee.role));
- $('bookingPanel').classList.toggle('hidden',!['booking_employee','supervisor'].includes(employee.role));
- $('reportsPanel').classList.toggle('hidden',employee.role!=='supervisor');
- $('deletedBookingsBtn').classList.toggle('hidden',employee.role!=='supervisor');
- $('auditPanel').classList.toggle('hidden',employee.role!=='supervisor');
- $('employeePanel').classList.toggle('hidden',employee.role!=='supervisor');
+ applyPermissionVisibility();
  try{await loadBookings();}catch(err){message('appMessage','تعذر تحميل الحجوزات: '+(err.message||'خطأ غير معروف'),'error');}
  if(['reception','supervisor'].includes(employee.role)&&typeof loadTodayBookings==='function'){
   try{await loadTodayBookings()}catch(err){message('appMessage','تعذر تحميل حجوزات اليوم: '+(err.message||'خطأ غير معروف'),'error')}
@@ -217,6 +212,24 @@ async function loadSession(){
 }
 
 const money=n=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:'SAR',maximumFractionDigits:0}).format(Number(n||0));
+function hasPermission(key){
+ if(employee?.role==='supervisor')return true;
+ return employee?.permissions?.[key]===true;
+}
+function applyPermissionVisibility(){
+ $('scannerPanel').classList.toggle('hidden',!hasPermission('scan_qr'));
+ $('bookingPanel').classList.toggle('hidden',!hasPermission('create_booking'));
+ $('reportsPanel').classList.toggle('hidden',!hasPermission('view_reports'));
+ $('auditPanel').classList.toggle('hidden',!hasPermission('view_audit'));
+ $('deletedBookingsBtn').classList.toggle('hidden',employee?.role!=='supervisor');
+ $('employeePanel').classList.toggle('hidden',employee?.role!=='supervisor');
+}
+$('employeeRole').addEventListener('change',()=>{
+ const role=$('employeeRole').value;
+ const defaults=role==='reception'?['view_bookings','scan_qr','accept_payment']:['view_bookings','create_booking','manage_qr'];
+ document.querySelectorAll('.employee-permission').forEach(x=>x.checked=defaults.includes(x.value));
+});
+
 async function loadEmployees(){
  const {data:rows,error}=await supabase.rpc('hadeeqah_list_employees');
  if(error)throw error;
@@ -254,7 +267,7 @@ async function loadEmployees(){
  }
 }
 
-$('addVisitorBtn')?.addEventListener('click',()=>{if(!['reception','supervisor'].includes(employee?.role))return;$('bookingPanel').classList.remove('hidden');$('bookingPanel').dataset.receptionOpened='true';$('bookingPanel').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$('customerName').focus(),250)});
+$('addVisitorBtn')?.addEventListener('click',()=>{if(!hasPermission('create_booking'))return;$('bookingPanel').classList.remove('hidden');$('bookingPanel').dataset.receptionOpened='true';$('bookingPanel').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$('customerName').focus(),250)});
 $('jumpTodayBtn')?.addEventListener('click',()=>{$('todayBookingsInline').scrollIntoView({behavior:'smooth',block:'start'})});
 $('jumpScannerBtn')?.addEventListener('click',()=>{$('scannerPanel').scrollIntoView({behavior:'smooth',block:'start'});$('startScanBtn').focus({preventScroll:true})});
 
