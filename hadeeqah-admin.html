@@ -287,15 +287,31 @@ async function loadReports(){
 function auditActionLabel(action){
  const labels={
   booking_created:'إنشاء حجز',
-  booking_updated:'تعديل حجز',
+  'إنشاء حجز':'إنشاء حجز',
+  booking_updated:'تعديل بيانات الحجز',
+  'booking updated':'تعديل بيانات الحجز',
   booking_arrived:'تسجيل وصول الزائر',
   booking_checked_in:'تسجيل وصول الزائر',
+  'guest checked in':'تسجيل وصول الزائر',
+  'guest arrived':'تسجيل وصول الزائر',
   cash_payment:'تسجيل سداد نقدي',
   payment_received:'تسجيل سداد',
+  'payment updated':'تحديث السداد',
+  payment_updated:'تحديث السداد',
   booking_cancelled:'إلغاء حجز',
+  'booking cancelled':'إلغاء حجز',
+  qr_updated:'تحديث رمز QR',
+  'qr updated':'تحديث رمز QR',
+  qr_created:'إصدار رمز QR',
+  'qr created':'إصدار رمز QR',
+  booking_deleted:'نقل الحجز إلى المحذوفات',
+  'booking deleted':'نقل الحجز إلى المحذوفات',
+  booking_restored:'استرجاع الحجز',
+  'booking restored':'استرجاع الحجز',
   employee_created:'إضافة موظف',
   employee_updated:'تعديل بيانات موظف',
-  login:'تسجيل دخول'
+  login:'تسجيل دخول',
+  logout:'تسجيل خروج'
  };
  const key=String(action||'').trim().toLowerCase();
  return labels[key]||key.replace(/[_-]+/g,' ')||'عملية أخرى';
