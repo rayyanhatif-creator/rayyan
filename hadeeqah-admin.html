@@ -115,7 +115,9 @@
         <div class="field"><label for="employeeEmail">البريد الإلكتروني للموظف (اسم الدخول)</label><input id="employeeEmail" required type="email" inputmode="email" autocomplete="email" placeholder="employee@example.com" maxlength="254"></div>
         <div class="field"><label for="employeePassword">كلمة المرور</label><input id="employeePassword" required type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="٦ أحرف على الأقل"></div>
         <div class="field"><label for="employeeRole">الصلاحية</label><select id="employeeRole" required><option value="booking_employee">موظف حجوزات</option><option value="reception">مسؤول استقبال ومسح QR</option></select></div>
-        <div class="field"><label for="employeeCode">رمز الموظف (اختياري)</label><input id="employeeCode" maxlength="40" placeholder="مثال: EMP-02"></div>
+        <div class="field"><label for="employeeCode">رمز الموظف (اختياري)</label><input id="employeeCode" maxlength="40" placeholder="مثال: EMP-02"></div><div class="field" style="grid-column:1/-1"><label>الصلاحيات الممنوحة لهذا الموظف</label><div class="columns" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:8px">
+<label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="employee-permission" value="view_bookings" checked>عرض الحجوزات</label><label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="employee-permission" value="create_booking" checked>إنشاء حجز جديد</label><label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="employee-permission" value="manage_qr" checked>إصدار وإعادة إصدار QR</label><label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="employee-permission" value="scan_qr" >استقبال الزوار ومسح QR</label><label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="employee-permission" value="accept_payment" >تسجيل السداد النقدي</label><label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="employee-permission" value="view_reports" >عرض التقارير المالية</label><label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="employee-permission" value="view_audit" >عرض سجل العمليات</label><label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="employee-permission" value="manage_employees" >إدارة الموظفين</label>
+</div><p class="muted">اختر الصلاحيات المطلوبة فقط. المشرف يحتفظ بكامل الصلاحيات.</p></div>
       </div>
       <button id="addEmployeeBtn" type="submit">إضافة الموظف</button>
     </form>
@@ -233,12 +235,17 @@ async function loadEmployees(){
    const roleInput=prompt('اختر الصلاحية بكتابة الرقم:\n1 = موظف حجوزات\n2 = مسؤول استقبال ومسح QR\n3 = مشرف',e.role==='booking_employee'?'1':e.role==='reception'?'2':'3');if(roleInput===null)return;
    const roleMap={'1':'booking_employee','2':'reception','3':'supervisor'};const role=roleMap[roleInput.trim()];if(!role){message('appMessage','اختر 1 أو 2 أو 3 للصلاحية.','error');return}
    const code=prompt('رمز الموظف (اختياري)',e.employee_code||'');if(code===null)return;
+   const permissionLabels=[['view_bookings','عرض الحجوزات'],['create_booking','إنشاء حجز جديد'],['manage_qr','إصدار وإعادة إصدار QR'],['scan_qr','استقبال الزوار ومسح QR'],['accept_payment','تسجيل السداد النقدي'],['view_reports','عرض التقارير المالية'],['view_audit','عرض سجل العمليات'],['manage_employees','إدارة الموظفين']];
+   const nextPermissions={...(e.permissions||{})};
+   for(const [key,label] of permissionLabels){nextPermissions[key]=confirm('هل تسمح لـ '+name.trim()+' بصلاحية: '+label+'؟\\nموافق = مسموح، إلغاء = غير مسموح.');}
    let nextActive=e.is_active;
    if(!e.is_current_user){nextActive=e.is_active?confirm('هل تريد إبقاء '+e.display_name+' نشطًا؟ موافق = نشط، إلغاء = إيقاف.'):confirm('هل تريد تفعيل '+e.display_name+'؟ موافق = تفعيل، إلغاء = إبقاء موقوفًا.')}
    edit.disabled=true;
    try{
     const {error:updateError}=await supabase.rpc('hadeeqah_update_employee',{p_employee_id:e.employee_id,p_display_name:name.trim(),p_role:role,p_is_active:nextActive,p_employee_code:code.trim()||null});
     if(updateError)throw updateError;
+    const {error:permissionError}=await supabase.rpc('hadeeqah_set_employee_permissions',{p_employee_id:e.employee_id,p_permissions:nextPermissions});
+    if(permissionError)throw permissionError;
     await loadEmployees();message('appMessage','تم تحديث بيانات وصلاحيات الموظف.','ok')
    }catch(err){message('appMessage',err.message||'تعذر تعديل الموظف.','error')}
    finally{edit.disabled=false}
@@ -538,6 +545,10 @@ $('employeeForm').addEventListener('submit',async e=>{
   const {data,error}=await supabase.functions.invoke('hadeeqah-create-employee',{body:payload});
   if(error)throw new Error(data?.error||error.message||'تعذر إنشاء حساب الموظف.');
   if(data?.error)throw new Error(data.error);
+  const {data:staffRows,error:staffError}=await supabase.rpc('hadeeqah_list_employees');
+  if(staffError)throw staffError;
+  const createdStaff=(staffRows||[]).find(x=>(x.email||'').toLowerCase()===payload.email);
+  if(createdStaff){const {error:permError}=await supabase.rpc('hadeeqah_set_employee_permissions',{p_employee_id:createdStaff.employee_id,p_permissions:payload.permissions});if(permError)throw permError;}
   $('employeeForm').reset();
   await loadEmployees();
   message('appMessage',data?.message||'تم إنشاء حساب الموظف بنجاح.','ok');
