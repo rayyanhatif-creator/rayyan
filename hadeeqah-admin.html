@@ -478,10 +478,9 @@ function randomToken(){const bytes=new Uint8Array(32);crypto.getRandomValues(byt
 async function sha256(value){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')}
 async function drawQrTicket(booking){
  const qrCanvas=$('qrCanvas'),ticket=$('qrTicketCanvas'),ctx=ticket.getContext('2d');
- const width=720,height=1040,center=width/2;
+ const width=720,height=1220,center=width/2;
  ticket.width=width;ticket.height=height;
  ctx.clearRect(0,0,width,height);
- // Warm ivory background and premium green header
  ctx.fillStyle='#F6F4ED';ctx.fillRect(0,0,width,height);
  ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.roundRect(24,24,width-48,height-48,28);ctx.fill();
  const header=ctx.createLinearGradient(24,24,width-24,250);
@@ -492,29 +491,40 @@ async function drawQrTicket(booking){
  ctx.fillStyle='#E6D09A';ctx.font='bold 20px Tahoma,Arial,sans-serif';ctx.fillText('H A D E E Q A H   T U Y O O R',center,91);
  ctx.fillStyle='#FFFFFF';ctx.font='bold 38px Tahoma,Arial,sans-serif';ctx.fillText('حديقة طيور الريان',center,145);
  ctx.fillStyle='#DDEDE5';ctx.font='22px Tahoma,Arial,sans-serif';ctx.fillText('بطاقة دخول الزائر',center,190);
- // Visitor identity
  ctx.fillStyle='#8B7849';ctx.font='bold 18px Tahoma,Arial,sans-serif';ctx.fillText('اسم الزائر',center,315);
  ctx.fillStyle='#17251F';ctx.font='bold 34px Tahoma,Arial,sans-serif';
  let guest=String(booking.customer_name||'زائرنا الكريم');
  if(guest.length>30)guest=guest.slice(0,29)+'…';
  ctx.fillText(guest,center,362);
- // QR frame
  const qrSize=365,x=center-qrSize/2,y=405;
  ctx.shadowColor='rgba(10,50,35,0.12)';ctx.shadowBlur=22;ctx.shadowOffsetY=7;
  ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.roundRect(x-24,y-24,qrSize+48,qrSize+48,26);ctx.fill();
  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
  ctx.drawImage(qrCanvas,x,y,qrSize,qrSize);
  ctx.fillStyle='#52645A';ctx.font='20px Tahoma,Arial,sans-serif';ctx.fillText('امسح الرمز عند بوابة الاستقبال',center,826);
- // Booking number chip
- ctx.fillStyle='#F3EAD4';ctx.beginPath();ctx.roundRect(230,850,260,60,18);ctx.fill();
+ ctx.fillStyle='#F3EAD4';ctx.beginPath();ctx.roundRect(190,850,340,60,18);ctx.fill();
  ctx.fillStyle='#665329';ctx.font='bold 24px Tahoma,Arial,sans-serif';ctx.fillText('رقم الحجز  '+String(booking.booking_number),center,888);
- // Three compact details
  const detailsY=950;
  ctx.fillStyle='#17251F';ctx.font='bold 19px Tahoma,Arial,sans-serif';
  ctx.fillText('تاريخ الزيارة',140,detailsY-14);ctx.fillText('وقت الزيارة',360,detailsY-14);ctx.fillText('الأشخاص',570,detailsY-14);
  ctx.fillStyle='#52645A';ctx.font='20px Tahoma,Arial,sans-serif';
  ctx.fillText(String(booking.visit_date||'—'),140,detailsY+20);ctx.fillText(String(booking.visit_time?formatTime12(booking.visit_time):'—'),360,detailsY+20);ctx.fillText(String(booking.party_size||'—'),570,detailsY+20);
- ctx.fillStyle='#D6B56D';ctx.fillRect(70,1000,width-140,3);
+ const due=Number(booking.amount_due||0),paid=Number(booking.amount_paid||0),remaining=Math.max(0,due-paid);
+ ctx.fillStyle='#E8F2EC';ctx.beginPath();ctx.roundRect(54,992,612,76,16);ctx.fill();
+ ctx.fillStyle='#52645A';ctx.font='bold 18px Tahoma,Arial,sans-serif';ctx.fillText('إجمالي الحجز',160,1021);ctx.fillText('المبلغ المدفوع',360,1021);ctx.fillText('المتبقي',555,1021);
+ ctx.fillStyle='#075C43';ctx.font='bold 23px Tahoma,Arial,sans-serif';ctx.fillText(money(due),160,1052);ctx.fillText(money(paid),360,1052);ctx.fillStyle=remaining>0?'#B42318':'#075C43';ctx.fillText(money(remaining),555,1052);
+ const note=String(booking.customer_note||'').trim();
+ if(note){
+  ctx.fillStyle='#FFF7E5';ctx.beginPath();ctx.roundRect(54,1082,612,96,16);ctx.fill();
+  ctx.textAlign='right';ctx.fillStyle='#8B6724';ctx.font='bold 19px Tahoma,Arial,sans-serif';ctx.fillText('ملاحظة على العميل',638,1110);
+  ctx.fillStyle='#17251F';ctx.font='18px Tahoma,Arial,sans-serif';
+  const maxWidth=560,lineHeight=24;let line='',lines=[];
+  for(const word of note.split(/\\s+/)){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}
+  if(line)lines.push(line);
+  const shown=lines.slice(0,2);if(lines.length>2)shown[1]=shown[1].slice(0,Math.max(0,shown[1].length-1))+'…';
+  shown.forEach((txt,i)=>ctx.fillText(txt,638,1140+i*lineHeight));
+ }
+ ctx.fillStyle='#D6B56D';ctx.fillRect(70,1190,width-140,3);
 }
 async function showQr(booking,token){activeQrBooking=booking;const qr=await getQRCode();const payload=JSON.stringify({type:'hadeeqah-booking',bookingId:booking.id,token});await qr.toCanvas($('qrCanvas'),payload,{width:300,margin:2,errorCorrectionLevel:'H',color:{dark:'#121212',light:'#ffffff'}});$('qrCustomer').textContent=booking.customer_name;$('qrBookingNo').textContent='رقم الحجز: '+booking.booking_number;await drawQrTicket(booking);$('qrPanel').classList.remove('hidden');document.body.style.overflow='hidden';$('closeQrBtn').focus()}
 function closeQrModal(){$('qrPanel').classList.add('hidden');document.body.style.overflow='';activeQrBooking=null}
