@@ -59,6 +59,19 @@
       <p class="muted" id="todayBookingsLabelInline">الحجوزات المجدولة اليوم تظهر هنا تلقائيًا.</p>
       <div class="table-wrap"><table><thead><tr><th>رقم الحجز</th><th>الزائر</th><th>الوقت</th><th>الأشخاص</th><th>المبلغ</th><th>السداد</th><th>الحالة</th></tr></thead><tbody id="todayBookingRowsInline"><tr><td colspan="7" class="empty">جارٍ تحميل حجوزات اليوم…</td></tr></tbody></table></div>
     </div>
+    <section id="purchasesPanel" class="panel" style="margin-top:14px">
+      <h3>مشتريات الحديقة</h3>
+      <p class="muted">سجّل أي شيء اشتريته للحديقة مع المبلغ المدفوع. تظهر مشتريات اليوم المسجلة من الموظفين.</p>
+      <form id="purchaseForm">
+        <div class="field"><label for="purchaseItemName">وش شريت؟</label><input id="purchaseItemName" maxlength="180" required placeholder="مثال: أكل طيور، أدوات تنظيف، مستلزمات"></div>
+        <div class="field"><label for="purchaseAmount">كم دفعت؟ (ريال)</label><input id="purchaseAmount" type="number" min="0.01" max="1000000" step="0.01" required placeholder="0.00"></div>
+        <div class="field"><label for="purchaseNote">ملاحظة (اختياري)</label><input id="purchaseNote" maxlength="500" placeholder="مثال: اسم المحل أو سبب الشراء"></div>
+        <button id="savePurchaseBtn" type="submit">حفظ المشتريات</button>
+      </form>
+      <div id="purchaseMessage" class="notice hidden" role="status"></div>
+      <div class="notice" style="margin-top:12px">إجمالي مشتريات اليوم: <strong id="purchasesTodayTotal">—</strong></div>
+      <div class="table-wrap"><table><thead><tr><th>المشتريات</th><th>المبلغ</th><th>الموظف</th><th>الوقت</th><th>ملاحظة</th></tr></thead><tbody id="purchaseRows"><tr><td colspan="5" class="empty">جارٍ تحميل المشتريات…</td></tr></tbody></table></div>
+    </section>
   </section>
   <section class="stats">
     <div class="stat"><small>إجمالي الحجوزات</small><strong id="totalBookings">—</strong></div>
@@ -290,6 +303,26 @@ $('addVisitorBtn')?.addEventListener('click',()=>{if(!hasPermission('create_book
 $('jumpTodayBtn')?.addEventListener('click',()=>{$('todayBookingsInline').scrollIntoView({behavior:'smooth',block:'start'})});
 $('jumpScannerBtn')?.addEventListener('click',()=>{$('scannerPanel').scrollIntoView({behavior:'smooth',block:'start'});$('startScanBtn').focus({preventScroll:true})});
 
+function formatPurchaseTime(value){return new Intl.DateTimeFormat('ar-SA',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Riyadh'}).format(new Date(value))}
+async function loadPurchases(){
+ const start=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Riyadh'}));start.setHours(0,0,0,0);
+ const end=new Date(start);end.setDate(end.getDate()+1);
+ const {data:rows,error}=await supabase.from('hadeeqah_purchases').select('id,item_name,amount,note,created_at,employee_id,hadeeqah_employees(display_name)').eq('company_id',company.id).gte('created_at',start.toISOString()).lt('created_at',end.toISOString()).order('created_at',{ascending:false}).limit(200);
+ if(error)throw error;
+ const body=$('purchaseRows');body.replaceChildren();let total=0;
+ if(!rows?.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=5;td.className='empty';td.textContent='ما فيه مشتريات مسجلة اليوم.';tr.append(td);body.append(tr)}
+ for(const p of rows||[]){total+=Number(p.amount||0);const tr=document.createElement('tr');for(const v of [p.item_name,money(p.amount),p.hadeeqah_employees?.display_name||'موظف',formatPurchaseTime(p.created_at),p.note||'—']){const td=document.createElement('td');td.textContent=v;tr.append(td)}body.append(tr)}
+ $('purchasesTodayTotal').textContent=money(total);
+}
+$('purchaseForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!hasPermission('scan_qr'))return;
+ const btn=$('savePurchaseBtn');btn.disabled=true;const original=btn.textContent;btn.textContent='جارٍ الحفظ…';
+ try{const name=$('purchaseItemName').value.trim();const amount=Number($('purchaseAmount').value);const note=$('purchaseNote').value.trim();if(!name)throw new Error('اكتب اسم المشتريات.');if(!Number.isFinite(amount)||amount<=0)throw new Error('أدخل مبلغًا صحيحًا أكبر من صفر.');
+ const {error}=await supabase.from('hadeeqah_purchases').insert({company_id:company.id,employee_id:employee.id,item_name:name,amount,note:note||null});if(error)throw error;
+ $('purchaseForm').reset();message('purchaseMessage','تم حفظ المشتريات بنجاح.','ok');await loadPurchases();
+ }catch(err){message('purchaseMessage','تعذر حفظ المشتريات: '+(err.message||'خطأ غير معروف'),'error')}
+ finally{btn.disabled=false;btn.textContent=original}
+});
 async function loadCashSummary(){const {data,error}=await supabase.rpc('hadeeqah_cash_summary');if(error)throw error;const s=data||{};if($('incomeTotalValue'))$('incomeTotalValue').textContent=money(s.income_total||0);if($('cashTotalValue'))$('cashTotalValue').textContent=money(s.cash_total||0);if($('registeredTotalValue'))$('registeredTotalValue').textContent=money(s.registered_total||0);if($('cashTodayEmployeeValue'))$('cashTodayEmployeeValue').textContent=money(s.cash_today||0)}
 
  async function loadTodayBookings(){
@@ -633,7 +666,7 @@ async function loadDeletedBookings(){
 }
 $('deletedBookingsBtn').addEventListener('click',async()=>{const panel=$('deletedBookingsPanel');panel.classList.toggle('hidden');if(!panel.classList.contains('hidden'))try{await loadDeletedBookings()}catch(err){message('appMessage','تعذر تحميل الحجوزات المحذوفة: '+(err.message||'خطأ غير معروف'),'error')}});
 $('closeDeletedBookingsBtn').addEventListener('click',()=>$('deletedBookingsPanel').classList.add('hidden'));
-$('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs()}await loadCashSummary();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
+$('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(hasPermission('scan_qr'))await loadPurchases();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs()}await loadCashSummary();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((event,session)=>{if(session)return;if(event==='SIGNED_OUT'){sessionUser=null;employee=null;company=null;showLogin()}});
 window.__hadeeqahModuleReady = true;
