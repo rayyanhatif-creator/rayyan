@@ -156,6 +156,30 @@
     <div class="table-wrap" style="margin-top:12px"><table style="min-width:650px"><thead><tr><th>الاسم</th><th>البريد الإلكتروني</th><th>الدور</th><th>رمز الموظف</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="employeeRows"><tr><td colspan="6" class="empty">جارٍ تحميل الموظفين…</td></tr></tbody></table></div>
   </section>
 
+  <section id="employeeEditPanel" class="panel hidden" style="margin-top:16px">
+    <div class="actions" style="justify-content:space-between;align-items:center"><h2 style="margin:0">تعديل بيانات الموظف</h2><button id="cancelEmployeeEditBtn" type="button" class="secondary">رجوع لقائمة الموظفين</button></div>
+    <p id="employeeEditSubtitle" class="muted">عدّل بيانات الموظف وصلاحياته من هذه الصفحة ثم احفظ التغييرات.</p>
+    <form id="employeeEditForm">
+      <div class="columns" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div class="field"><label for="editEmployeeName">اسم الموظف</label><input id="editEmployeeName" required maxlength="120"></div>
+        <div class="field"><label for="editEmployeeEmail">البريد الإلكتروني (اسم الدخول)</label><input id="editEmployeeEmail" type="email" readonly><small class="muted">البريد مرتبط بحساب تسجيل الدخول ولا يمكن تغييره من هذه الصفحة.</small></div>
+        <div class="field"><label for="editEmployeeRole">الصلاحية الوظيفية</label><select id="editEmployeeRole" required><option value="booking_employee">موظف حجوزات</option><option value="reception">مسؤول استقبال ومسح QR</option><option value="supervisor">مشرف</option></select></div>
+        <div class="field"><label for="editEmployeeCode">رمز الموظف</label><input id="editEmployeeCode" maxlength="40" placeholder="اختياري"></div>
+        <div class="field" style="grid-column:1/-1"><label style="display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--border,#444);border-radius:10px"><input id="editEmployeeActive" type="checkbox"> حساب الموظف نشط ويسمح له بتسجيل الدخول</label></div>
+        <div class="field" style="grid-column:1/-1"><label>الصلاحيات الممنوحة</label><div class="columns" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:8px">
+          <label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:12px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="edit-employee-permission" value="view_bookings"> عرض الحجوزات</label>
+          <label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:12px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="edit-employee-permission" value="create_booking"> إنشاء حجز جديد</label>
+          <label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:12px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="edit-employee-permission" value="manage_qr"> إصدار وإعادة إصدار QR</label>
+          <label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:12px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="edit-employee-permission" value="scan_qr"> استقبال الزوار ومسح QR</label>
+          <label class="permission-option" style="display:flex;gap:8px;align-items:center;padding:12px;border:1px solid var(--border,#444);border-radius:10px"><input type="checkbox" class="edit-employee-permission" value="accept_payment"> تسجيل السداد النقدي</label>
+        </div><p class="muted">المشرف يحتفظ بكامل الصلاحيات.</p></div>
+      </div>
+      <div class="actions" style="margin-top:16px"><button id="saveEmployeeEditBtn" type="submit">حفظ التعديلات</button><button id="cancelEmployeeEditBtnBottom" type="button" class="secondary">إلغاء والرجوع</button></div>
+      <div id="employeeEditMessage" class="notice hidden" role="status" style="margin-top:12px"></div>
+    </form>
+  </section>
+
+
   <section id="qrPanel" class="qr-modal hidden" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
     <div class="qr-modal-card">
       <button id="closeQrBtn" type="button" class="secondary qr-close" aria-label="إغلاق">✕</button>
@@ -214,6 +238,7 @@ const SUPABASE_URL = 'https://daqtkhhlqlkpypffecel.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_mwiKjxLYtMCXwZ_ZdC7TLA_6Gz4GbiD';
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage } });
 let sessionUser=null, employee=null, company=null, pricing=[], scanStream=null, scanActive=false, activeQrBooking=null, employeeDirectory=[];
+let editingEmployee=null;
 const $=id=>document.getElementById(id);
 function showLogin(){ $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); }
 // Keep the dashboard position when the page is refreshed.
@@ -306,25 +331,16 @@ async function loadEmployees(){
   }
   const td=document.createElement('td');
   const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='تعديل';edit.style.padding='7px 10px';edit.style.fontSize='12px';
-  edit.addEventListener('click',async()=>{
-   const name=prompt('اسم الموظف',e.display_name);if(name===null)return;
-   const roleInput=prompt('اختر الصلاحية بكتابة الرقم:\n1 = موظف حجوزات\n2 = مسؤول استقبال ومسح QR\n3 = مشرف',e.role==='booking_employee'?'1':e.role==='reception'?'2':'3');if(roleInput===null)return;
-   const roleMap={'1':'booking_employee','2':'reception','3':'supervisor'};const role=roleMap[roleInput.trim()];if(!role){message('appMessage','اختر 1 أو 2 أو 3 للصلاحية.','error');return}
-   const code=prompt('رمز الموظف (اختياري)',e.employee_code||'');if(code===null)return;
-   const permissionLabels=[['view_bookings','عرض الحجوزات'],['create_booking','إنشاء حجز جديد'],['manage_qr','إصدار وإعادة إصدار QR'],['scan_qr','استقبال الزوار ومسح QR'],['accept_payment','تسجيل السداد النقدي'],];
-   const nextPermissions={...(e.permissions||{})};
-   for(const [key,label] of permissionLabels){nextPermissions[key]=confirm('هل تسمح لـ '+name.trim()+' بصلاحية: '+label+'؟\\nموافق = مسموح، إلغاء = غير مسموح.');}
-   let nextActive=e.is_active;
-   if(!e.is_current_user){nextActive=e.is_active?confirm('هل تريد إبقاء '+e.display_name+' نشطًا؟ موافق = نشط، إلغاء = إيقاف.'):confirm('هل تريد تفعيل '+e.display_name+'؟ موافق = تفعيل، إلغاء = إبقاء موقوفًا.')}
-   edit.disabled=true;
-   try{
-    const {error:updateError}=await supabase.rpc('hadeeqah_update_employee',{p_employee_id:e.employee_id,p_display_name:name.trim(),p_role:role,p_is_active:nextActive,p_employee_code:code.trim()||null});
-    if(updateError)throw updateError;
-    const {error:permissionError}=await supabase.rpc('hadeeqah_set_employee_permissions',{p_employee_id:e.employee_id,p_permissions:nextPermissions});
-    if(permissionError)throw permissionError;
-    await loadEmployees();message('appMessage','تم تحديث بيانات وصلاحيات الموظف.','ok')
-   }catch(err){message('appMessage',err.message||'تعذر تعديل الموظف.','error')}
-   finally{edit.disabled=false}
+  edit.addEventListener('click',()=>{
+   if(employee?.role!=='supervisor'){message('appMessage','تعديل الموظفين متاح للمشرف فقط.','error');return}
+   editingEmployee=e;
+   $('employeePanel').classList.add('hidden');$('employeeEditPanel').classList.remove('hidden');
+   $('employeeEditSubtitle').textContent='تعديل حساب: '+(e.display_name||'موظف')+' — عدّل الحقول والصلاحيات ثم اضغط حفظ التعديلات.';
+   $('editEmployeeName').value=e.display_name||'';$('editEmployeeEmail').value=e.email||'';
+   $('editEmployeeRole').value=e.role||'booking_employee';$('editEmployeeCode').value=e.employee_code||'';
+   $('editEmployeeActive').checked=!!e.is_active;
+   document.querySelectorAll('.edit-employee-permission').forEach(cb=>{cb.checked=!!(e.permissions||{})[cb.value];cb.disabled=e.role==='supervisor'});
+   $('employeeEditMessage').classList.add('hidden');$('employeeEditPanel').scrollIntoView({behavior:'smooth',block:'start'});
   });
   td.append(edit);tr.append(td);body.append(tr)
  }
@@ -464,7 +480,7 @@ function showManagerView(view){
  const allowed={home:true,newBooking:hasPermission('create_booking'),bookings:hasPermission('view_bookings'),today:['reception','supervisor'].includes(role)&&(role==='reception'||hasPermission('view_bookings')),cashPayments:role==='reception',scanner:hasPermission('scan_qr'),daily:role==='supervisor',finance:role==='supervisor',reports:role==='supervisor',employees:role==='supervisor',audit:role==='supervisor',deleted:role==='supervisor'};
  if(!allowed[view])return;
  $('managerMenu').classList.add('hidden');$('managerMenuBtn').setAttribute('aria-expanded','false');
- ['welcomePanel','scannerPanel','todayBookingsPanel','cashPaymentsPanel','dailyFinancePanel','dashboardStats','bookingsAdminPanel','bookingPanel','bookingListPanel','dailyStatementPanel','reportsPanel','employeePanel','auditPanel','deletedBookingsPanel'].forEach(id=>$(id)?.classList.add('hidden'));
+ ['welcomePanel','scannerPanel','todayBookingsPanel','cashPaymentsPanel','dailyFinancePanel','dashboardStats','bookingsAdminPanel','bookingPanel','bookingListPanel','dailyStatementPanel','reportsPanel','employeePanel','employeeEditPanel','auditPanel','deletedBookingsPanel'].forEach(id=>$(id)?.classList.add('hidden'));
  $('deletedBookingsBtn').classList.add('hidden');
  if(view==='home'){$('welcomePanel').classList.remove('hidden');$('welcomeTitle').textContent='أهلًا '+(employee?.display_name||'بك')}
  else if(view==='newBooking'){$('bookingsAdminPanel').classList.remove('hidden');$('bookingPanel').classList.remove('hidden');if(role==='reception'){$('bookingPanel').dataset.receptionOpened='true';$('bookingType').value='regular';$('bookingType').disabled=true;$('bookingType').querySelector('option[value="school"]').disabled=true;$('togglePriceEditBtn').classList.add('hidden');$('manualPriceWrap').classList.add('hidden');$('manualPrice').value=''}}
@@ -684,6 +700,26 @@ $('collectPaymentBtn').addEventListener('click',async()=>{if(!scannedBooking)ret
 async function processScannedQr(raw){try{const data=JSON.parse(raw);if(data.type!=='hadeeqah-booking'||!data.bookingId||!data.token)throw new Error('هذا ليس رمز حجز صالحًا.');const {data:before,error:beforeError}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_note,party_size,amount_due,amount_paid,payment_status,booking_status,visit_date,visit_time,price_rule_snapshot').eq('id',data.bookingId).eq('company_id',company.id).maybeSingle();if(beforeError)throw beforeError;if(!before)throw new Error('الحجز غير موجود في شركتك.');if(before.deleted_at)throw new Error('هذا الحجز محذوف؛ اطلب من المشرف استرجاعه أولًا.');const tokenHash=await sha256(data.token);const {data:checked,error}=await supabase.rpc('hadeeqah_checkin',{p_booking_id:data.bookingId,p_token_hash:tokenHash});if(error){const msg=error.message||'';if(/استُخدم سابقًا|سبق|غير صحيح|ملغي/.test(msg))throw new Error('سبق استخدام الباركود أو انتهت صلاحيته أو أن الحجز ملغي. اطلب بطاقة QR جديدة من موظف الحجوزات.');throw error}const item=Array.isArray(checked)?checked[0]:checked;if(!item)throw new Error('لم يتم العثور على الحجز.');scannedBooking=Object.assign({},before,{customer_name:item.customer_name||before.customer_name,booking_number:item.booking_number||before.booking_number,party_size:item.party_size||before.party_size});const remaining=Math.max(0,Number(before.amount_due||0)-Number(before.amount_paid||0));message('scanMessage','تم تسجيل وصول الزائر بنجاح! اختر الإجراء المناسب أدناه.','ok');renderScanActions();await loadBookings();await loadTodayBookings()}catch(err){$('scanActions').classList.add('hidden');message('scanMessage',err.message||'تعذر التحقق من الرمز.','error')}}
 
 
+function closeEmployeeEdit(){editingEmployee=null;$('employeeEditPanel').classList.add('hidden');$('employeePanel').classList.remove('hidden')}
+$('cancelEmployeeEditBtn').addEventListener('click',closeEmployeeEdit);
+$('cancelEmployeeEditBtnBottom').addEventListener('click',closeEmployeeEdit);
+$('employeeEditForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(employee?.role!=='supervisor'||!editingEmployee){message('employeeEditMessage','لا تملك صلاحية تعديل هذا الحساب.','error');return}
+ const name=$('editEmployeeName').value.trim(),role=$('editEmployeeRole').value,code=$('editEmployeeCode').value.trim();
+ if(!name){message('employeeEditMessage','اسم الموظف مطلوب.','error');return}
+ const permissions={...(editingEmployee.permissions||{})};
+ document.querySelectorAll('.edit-employee-permission').forEach(cb=>{permissions[cb.value]=cb.checked});
+ const btn=$('saveEmployeeEditBtn'),old=btn.textContent;btn.disabled=true;btn.textContent='جارٍ الحفظ…';
+ try{
+  const {error:updateError}=await supabase.rpc('hadeeqah_update_employee',{p_employee_id:editingEmployee.employee_id,p_display_name:name,p_role:role,p_is_active:$('editEmployeeActive').checked,p_employee_code:code||null});
+  if(updateError)throw updateError;
+  const {error:permissionError}=await supabase.rpc('hadeeqah_set_employee_permissions',{p_employee_id:editingEmployee.employee_id,p_permissions:permissions});
+  if(permissionError)throw permissionError;
+  await loadEmployees();message('appMessage','تم حفظ بيانات وصلاحيات الموظف.','ok');closeEmployeeEdit();
+ }catch(err){message('employeeEditMessage',err.message||'تعذر حفظ التعديلات.','error')}
+ finally{btn.disabled=false;btn.textContent=old}
+});
 $('employeeForm').addEventListener('submit',async e=>{
  e.preventDefault();
  if(employee?.role!=='supervisor'){message('appMessage','إضافة الموظفين متاحة للمشرف فقط.','error');return}
