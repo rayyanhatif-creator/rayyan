@@ -28,6 +28,14 @@
 @media(max-width:420px){.qr-modal{padding:10px}.qr-modal-card{padding:20px 14px;max-height:calc(100dvh - 20px);border-radius:16px}.qr-modal-card canvas{width:min(100%,250px);max-height:40dvh}}
 
 .school-modal{position:fixed;inset:0;z-index:10000;background:#000b;display:flex;align-items:center;justify-content:center;padding:16px}.school-modal.hidden{display:none!important}.school-modal-card{position:relative;width:min(100%,420px);background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 20px 70px #0009}.school-modal-card h3{margin:4px 38px 20px 0}.school-close{position:absolute;top:12px;left:12px;padding:8px 12px!important;min-height:36px}.school-detail{display:grid;gap:7px;padding:13px 0;border-bottom:1px solid var(--line)}.school-detail span{font-size:12px;color:var(--muted)}.school-detail strong{font-size:16px;overflow-wrap:anywhere}.school-modal-card .full{margin-top:18px}
+/* Welcome screen and role-aware navigation */
+.welcome-hero{position:relative;isolation:isolate;min-height:clamp(300px,48vh,480px);display:flex;align-items:flex-end;overflow:hidden;border:1px solid #315447;border-radius:22px;margin:8px 0 16px;padding:clamp(22px,5vw,48px);background:linear-gradient(180deg,rgba(4,20,15,.08) 0%,rgba(4,20,15,.25) 28%,rgba(4,20,15,.94) 100%),url('https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=1800&q=85') center 42%/cover no-repeat,#0b543d;box-shadow:0 18px 45px #0007}
+.welcome-copy{max-width:720px}.welcome-kicker{display:inline-flex;border:1px solid #ffffff55;background:#081c16a8;border-radius:99px;padding:7px 12px;color:#c9f4df;font-size:12px;margin-bottom:14px}.welcome-hero h2{font-size:clamp(30px,5vw,52px);line-height:1.25;margin:0 0 12px;text-shadow:0 3px 20px #0009}.welcome-hero p{font-size:clamp(15px,2vw,19px);line-height:1.9;color:#f0f7f3;margin:0;max-width:600px}.welcome-hint{display:flex;align-items:center;gap:9px;margin-top:20px;color:#fff;font-weight:700}.welcome-dot{width:9px;height:9px;border-radius:50%;background:#62c7a5;box-shadow:0 0 14px #62c7a5}
+#bookingsAdminPanel:has(#bookingPanel.hidden){grid-template-columns:minmax(0,1fr)}
+.manager-menu button[data-roles]{display:none}.manager-menu button[data-roles].role-visible{display:block}
+.manager-menu .menu-divider{height:1px;background:#383838;margin:5px 2px}
+#refreshBtn,#logoutBtn{display:none!important}
+@media(max-width:760px){.welcome-hero{min-height:360px;border-radius:17px;background-position:center;background-image:linear-gradient(180deg,rgba(4,20,15,.03) 0%,rgba(4,20,15,.28) 25%,rgba(4,20,15,.95) 100%),url('https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=1200&q=80')}}
 </style>
 </head>
 <body>
@@ -44,7 +52,8 @@
   </section>
 </div>
 <div id="appView" class="wrap hidden">
-  <header class="header"><div><div class="brand" style="margin:0"><div class="logo">🦜</div><div><h1>حديقة طيور الريان</h1><div class="muted">لوحة إدارة الحجوزات</div></div></div></div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span id="roleBadge" class="badge">حساب موظف</span><div id="managerMenuWrap" class="manager-menu-wrap hidden"><button id="managerMenuBtn" type="button" class="secondary" aria-label="قائمة المدير" aria-expanded="false" style="font-size:22px;line-height:1;padding:8px 14px">⋮</button><div id="managerMenu" class="manager-menu hidden" role="menu"><button type="button" data-manager-view="bookings">حجوزات اليوم مع مسح الباركود</button><button type="button" data-manager-view="daily">بيان اليوم</button><button type="button" data-manager-view="purchases">المشتريات</button><button type="button" data-manager-view="finance">البيان المالي</button><button type="button" data-manager-view="reports">التقارير</button><button type="button" data-manager-view="employees">الموظفون والصلاحيات</button><button type="button" data-manager-view="audit">سجل العمليات</button></div></div><button id="refreshBtn" class="secondary">تحديث</button><button id="logoutBtn" class="secondary">خروج</button></div></header>
+  <header class="header"><div><div class="brand" style="margin:0"><div class="logo">🦜</div><div><h1>حديقة طيور الريان</h1><div class="muted">لوحة إدارة الحجوزات</div></div></div></div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span id="roleBadge" class="badge">حساب موظف</span><div id="managerMenuWrap" class="manager-menu-wrap"><button id="managerMenuBtn" type="button" class="secondary" aria-label="القائمة الرئيسية" aria-expanded="false" style="font-size:22px;line-height:1;padding:8px 14px">⋮</button><div id="managerMenu" class="manager-menu hidden" role="menu"><button type="button" data-manager-view="home" data-roles="all">الرئيسية والترحيب</button><div class="menu-divider" data-roles="all"></div><button type="button" data-manager-view="newBooking" data-roles="booking_employee,reception,supervisor" data-permission="create_booking">إضافة حجز جديد</button><button type="button" data-manager-view="bookings" data-roles="booking_employee,reception,supervisor" data-permission="view_bookings">الحجوزات</button><button type="button" data-manager-view="today" data-roles="reception,supervisor" data-permission="view_bookings">حجوزات اليوم</button><button type="button" data-manager-view="scanner" data-roles="reception,supervisor" data-permission="scan_qr">استقبال الزوار ومسح الباركود</button><button type="button" data-manager-view="daily" data-roles="supervisor">بيان اليوم</button><button type="button" data-manager-view="purchases" data-roles="reception,supervisor">المشتريات</button><button type="button" data-manager-view="finance" data-roles="reception,supervisor">البيان المالي</button><button type="button" data-manager-view="reports" data-roles="supervisor">التقارير</button><button type="button" data-manager-view="employees" data-roles="supervisor">الموظفون والصلاحيات</button><button type="button" data-manager-view="audit" data-roles="supervisor">سجل العمليات</button><button type="button" data-manager-view="deleted" data-roles="supervisor">الحجوزات المحذوفة</button><div class="menu-divider" data-roles="all"></div><button type="button" data-menu-action="refresh" data-roles="all" class="secondary">تحديث البيانات</button><button type="button" data-menu-action="logout" data-roles="all" class="secondary">تسجيل الخروج</button></div></div><button id="refreshBtn" class="secondary">تحديث</button><button id="logoutBtn" class="secondary">خروج</button></div></header>
+  <section id="welcomePanel" class="welcome-hero"><div class="welcome-copy"><span class="welcome-kicker">حديقة طيور الريان · لوحة الإدارة</span><h2 id="welcomeTitle">أهلًا وسهلًا بك</h2><p>نسعد بوجودك معنا. من القائمة بالأعلى تقدر تدخل إلى القسم اللي تحتاجه، وكل قسم مستقل عن الثاني لسهولة الاستخدام.</p><div class="welcome-hint"><span class="welcome-dot"></span><span>اختر ⋮ لعرض أقسام النظام</span></div></div></section>
   <div id="appMessage" class="notice hidden" role="status"></div>
   <section id="scannerPanel" class="panel hidden" style="margin-bottom:12px">
     <h3>استقبال الزوار ومسح QR</h3>
@@ -55,24 +64,27 @@
     <canvas id="scanCanvas" class="hidden"></canvas>
     <div id="scanMessage" class="notice hidden" role="status"></div>
     <div id="scanActions" class="panel hidden" style="margin-top:12px"><h3 id="scanGuestTitle">بيانات الزائر</h3><p id="scanGuestDetails" class="muted"></p><div id="scanCustomerNote" class="notice" style="display:none;border-inline-start:4px solid #D6B56D;font-weight:700;white-space:pre-wrap"></div><div class="actions"><button id="confirmPartyBtn" type="button" class="secondary">نعم، العدد صحيح</button><button id="changePartyBtn" type="button" class="secondary">لا، أضف أشخاصًا</button><button id="collectPaymentBtn" type="button">تم استلام المبلغ نقدًا</button></div><p class="muted" id="scanActionStatus"></p></div>
+
+  </section>
+  <section id="todayBookingsPanel" class="panel hidden" style="margin-bottom:12px">
     <div id="todayBookingsInline" style="margin-top:16px">
       <h3>حجوزات اليوم</h3><div id="cashTodayEmployeeCard" class="notice hidden" style="border-inline-start:4px solid #0b8f68;font-size:16px;font-weight:700">إجمالي الكاش المستلم اليوم: <strong id="cashTodayEmployeeValue">—</strong></div>
       <p class="muted" id="todayBookingsLabelInline">الحجوزات المجدولة اليوم تظهر هنا تلقائيًا.</p>
       <div class="table-wrap"><table><thead><tr><th>رقم الحجز</th><th>الزائر</th><th>الوقت</th><th>الأشخاص</th><th>المبلغ</th><th>السداد</th><th>الحالة</th></tr></thead><tbody id="todayBookingRowsInline"><tr><td colspan="7" class="empty">جارٍ تحميل حجوزات اليوم…</td></tr></tbody></table></div>
     </div>
-    <section id="purchasesPanel" class="panel" style="margin-top:14px">
-      <h3>مشتريات الحديقة</h3>
-      <p class="muted">سجّل أي شيء اشتريته للحديقة مع المبلغ المدفوع. تظهر مشتريات اليوم المسجلة من الموظفين.</p>
-      <form id="purchaseForm">
-        <div class="field"><label for="purchaseItemName">وش شريت؟</label><input id="purchaseItemName" maxlength="180" required placeholder="مثال: أكل طيور، أدوات تنظيف، مستلزمات"></div>
-        <div class="field"><label for="purchaseAmount">كم دفعت؟ (ريال)</label><input id="purchaseAmount" type="number" min="0.01" max="1000000" step="0.01" required placeholder="0.00"></div>
-        <div class="field"><label for="purchaseNote">ملاحظة (اختياري)</label><input id="purchaseNote" maxlength="500" placeholder="مثال: اسم المحل أو سبب الشراء"></div>
-        <button id="savePurchaseBtn" type="submit">حفظ المشتريات</button>
-      </form>
-      <div id="purchaseMessage" class="notice hidden" role="status"></div>
-      <div class="notice" style="margin-top:12px">إجمالي مشتريات اليوم: <strong id="purchasesTodayTotal">—</strong></div>
-      <div class="table-wrap"><table><thead><tr><th>المشتريات</th><th>المبلغ</th><th>الموظف</th><th>الوقت</th><th>ملاحظة</th></tr></thead><tbody id="purchaseRows"><tr><td colspan="5" class="empty">جارٍ تحميل المشتريات…</td></tr></tbody></table></div>
-    </section>
+  </section>
+  <section id="purchasesPanel" class="panel" style="margin-top:14px">
+    <h3>مشتريات الحديقة</h3>
+    <p class="muted">سجّل أي شيء اشتريته للحديقة مع المبلغ المدفوع. تظهر مشتريات اليوم المسجلة من الموظفين.</p>
+    <form id="purchaseForm">
+      <div class="field"><label for="purchaseItemName">وش شريت؟</label><input id="purchaseItemName" maxlength="180" required placeholder="مثال: أكل طيور، أدوات تنظيف، مستلزمات"></div>
+      <div class="field"><label for="purchaseAmount">كم دفعت؟ (ريال)</label><input id="purchaseAmount" type="number" min="0.01" max="1000000" step="0.01" required placeholder="0.00"></div>
+      <div class="field"><label for="purchaseNote">ملاحظة (اختياري)</label><input id="purchaseNote" maxlength="500" placeholder="مثال: اسم المحل أو سبب الشراء"></div>
+      <button id="savePurchaseBtn" type="submit">حفظ المشتريات</button>
+    </form>
+    <div id="purchaseMessage" class="notice hidden" role="status"></div>
+    <div class="notice" style="margin-top:12px">إجمالي مشتريات اليوم: <strong id="purchasesTodayTotal">—</strong></div>
+    <div class="table-wrap"><table><thead><tr><th>المشتريات</th><th>المبلغ</th><th>الموظف</th><th>الوقت</th><th>ملاحظة</th></tr></thead><tbody id="purchaseRows"><tr><td colspan="5" class="empty">جارٍ تحميل المشتريات…</td></tr></tbody></table></div>
   </section>
   <section id="dailyFinancePanel" class="panel hidden" style="margin-top:14px"><h3>البيان المالي اليومي</h3><p class="muted">يسجل موظف الاستقبال بيان اليوم، ثم تضيف الإدارة دفعة تاب وتحفظها في السجل نفسه.</p>
     <form id="dailyFinanceForm"><div class="daily-finance-grid"><div class="field"><label for="financeReportDate">تاريخ البيان</label><input id="financeReportDate" type="date" required></div><div class="field"><label for="financeTotalAmount">إجمالي المبلغ (ريال)</label><input id="financeTotalAmount" type="number" min="0" max="1000000" step="0.01" required placeholder="0"></div><div class="field"><label for="financeCashAmount">مبلغ الكاش (ريال)</label><input id="financeCashAmount" type="number" min="0" max="1000000" step="0.01" required placeholder="0"></div><div class="field"><label for="financeExpensesAmount">المصروفات (ريال)</label><input id="financeExpensesAmount" type="number" min="0" max="1000000" step="0.01" required placeholder="0"></div></div><div class="field"><label for="financeNotes">ملاحظات (اختياري)</label><input id="financeNotes" maxlength="1000" placeholder="أي تفاصيل تخص بيان اليوم"></div><button id="submitDailyFinanceBtn" type="submit">رفع البيان المالي للإدارة</button></form>
@@ -105,8 +117,8 @@
         <button id="createBookingBtn" type="submit" class="full">حفظ الحجز</button>
       </form>
     </section>
-    <section class="panel">
-      <h3>أحدث الحجوزات</h3>
+    <section id="bookingListPanel" class="panel">
+      <h3>الحجوزات</h3>
       <div class="table-wrap"><table><thead><tr><th>رقم الحجز</th><th>الزائر</th><th>رقم الجوال</th><th>موعد الزيارة</th><th>الأشخاص</th><th>المبلغ</th><th>السداد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="bookingRows"><tr><td colspan="7" class="empty">جارٍ تحميل الحجوزات…</td></tr></tbody></table></div>
       <p class="muted">يمكن إصدار QR للحجز بعد حفظه. السداد النقدي وإدارة الحجوزات من هنا. الدفع الإلكتروني غير مفعّل حاليًا.</p>
     </section>
@@ -234,7 +246,7 @@ async function loadSession(){
  pricing=priceRows||[];
  if(!company) throw new Error('تعذر العثور على الشركة المرتبطة بالحساب.');
  $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
- $('roleBadge').textContent=employee.role==='supervisor'?'مشرف':employee.role==='reception'?'مسؤول استقبال ومسح QR':'موظف حجوزات';
+ $('roleBadge').textContent=employee.role==='supervisor'?'مشرف':employee.role==='reception'?'مسؤول استقبال ومسح QR':'موظف حجوزات';$('welcomeTitle').textContent='أهلًا '+(employee.display_name||'بك');
  $('financeReportDate').value=localDateISO();
  applyPermissionVisibility();
  try{await loadBookings();}catch(err){message('appMessage','تعذر تحميل الحجوزات: '+(err.message||'خطأ غير معروف'),'error');}
@@ -255,8 +267,16 @@ function hasPermission(key){
  return employee?.permissions?.[key]===true;
 }
 function applyPermissionVisibility(){
- const isSupervisor=employee?.role==='supervisor';$('supervisorIncomeStats').classList.toggle('hidden',!isSupervisor);$('cashTodayEmployeeCard').classList.toggle('hidden',!hasPermission('scan_qr'));$('scannerPanel').classList.toggle('hidden',!hasPermission('scan_qr'));$('bookingPanel').classList.toggle('hidden',!hasPermission('create_booking'));$('reportsPanel').classList.toggle('hidden',!isSupervisor);$('auditPanel').classList.toggle('hidden',!isSupervisor);$('deletedBookingsBtn').classList.toggle('hidden',!isSupervisor);$('employeePanel').classList.toggle('hidden',!isSupervisor);$('managerMenuWrap').classList.toggle('hidden',!isSupervisor);$('dailyFinancePanel').classList.toggle('hidden',!['reception','supervisor'].includes(employee?.role));$('dailyFinanceForm').classList.toggle('hidden',employee?.role!=='reception');
- if(isSupervisor)showManagerView('bookings');else{document.querySelectorAll('.manager-menu-hidden').forEach(el=>el.classList.remove('manager-menu-hidden'));$('dailyStatementPanel').classList.add('hidden');$('bookingsAdminPanel').classList.remove('hidden');$('dashboardStats').classList.remove('hidden')}
+ const role=employee?.role||'',isSupervisor=role==='supervisor';
+ $('supervisorIncomeStats').classList.toggle('hidden',!isSupervisor);
+ $('cashTodayEmployeeCard').classList.toggle('hidden',!hasPermission('scan_qr'));
+ $('reportsPanel').classList.toggle('hidden',!isSupervisor);$('auditPanel').classList.toggle('hidden',!isSupervisor);
+ $('deletedBookingsBtn').classList.toggle('hidden',!isSupervisor);$('employeePanel').classList.toggle('hidden',!isSupervisor);
+ $('dailyFinancePanel').classList.toggle('hidden',!['reception','supervisor'].includes(role));
+ $('dailyFinanceForm').classList.toggle('hidden',role!=='reception');
+ document.querySelectorAll('[data-manager-view][data-roles]').forEach(btn=>{const roleAllowed=btn.dataset.roles==='all'||btn.dataset.roles.split(',').includes(role);const permission=btn.dataset.permission;btn.classList.toggle('role-visible',roleAllowed&&(!permission||hasPermission(permission)))});
+ document.querySelectorAll('[data-roles="all"]').forEach(el=>el.classList.add('role-visible'));
+ showManagerView('home');
 }
 $('employeeRole').addEventListener('change',()=>{
  const role=$('employeeRole').value;
@@ -432,17 +452,29 @@ async function loadDailyFinance(){
 }
 $('dailyFinanceForm').addEventListener('submit',async e=>{e.preventDefault();if(employee?.role!=='reception'){message('dailyFinanceMessage','رفع البيان المالي متاح لموظف الاستقبال.','error');return}const btn=$('submitDailyFinanceBtn');btn.disabled=true;const old=btn.textContent;btn.textContent='جارٍ رفع البيان…';try{const date=$('financeReportDate').value,total=Number($('financeTotalAmount').value),cash=Number($('financeCashAmount').value),expenses=Number($('financeExpensesAmount').value),notes=$('financeNotes').value.trim();if(!date||![total,cash,expenses].every(n=>Number.isFinite(n)&&n>=0&&n<=1000000))throw new Error('تأكد من التاريخ والمبالغ المدخلة.');const {error}=await supabase.from('hadeeqah_daily_finance').insert({company_id:company.id,report_date:date,total_amount:total,payment_amount:0,cash_amount:cash,expenses_amount:expenses,notes:notes||null,created_by:employee.id,updated_by:employee.id});if(error)throw error;$('dailyFinanceForm').reset();$('financeReportDate').value=localDateISO();message('dailyFinanceMessage','تم رفع البيان المالي للإدارة بنجاح.','ok');await loadDailyFinance()}catch(err){message('dailyFinanceMessage','تعذر رفع البيان المالي: '+(err.message||'خطأ غير معروف'),'error')}finally{btn.disabled=false;btn.textContent=old}});
 function showManagerView(view){
- if(employee?.role!=='supervisor')return;const scanner=$('scannerPanel'),children=Array.from(scanner.children);document.querySelectorAll('.manager-menu-hidden').forEach(el=>el.classList.remove('manager-menu-hidden'));$('managerMenu').classList.add('hidden');$('managerMenuBtn').setAttribute('aria-expanded','false');
- ['scannerPanel','bookingsAdminPanel','dashboardStats','dailyStatementPanel','dailyFinancePanel','reportsPanel','employeePanel','auditPanel'].forEach(id=>$(id).classList.add('hidden'));$('deletedBookingsBtn').classList.add('hidden');$('deletedBookingsPanel').classList.add('hidden');
- if(view==='bookings'){$('scannerPanel').classList.remove('hidden');$('bookingsAdminPanel').classList.remove('hidden');$('dashboardStats').classList.remove('hidden');$('deletedBookingsBtn').classList.remove('hidden');children.forEach(el=>{if(['purchasesPanel','dailyFinancePanel'].includes(el.id))el.classList.add('manager-menu-hidden')})}
+ const role=employee?.role||'';
+ const allowed={home:true,newBooking:hasPermission('create_booking'),bookings:hasPermission('view_bookings'),today:hasPermission('view_bookings')&&['reception','supervisor'].includes(role),scanner:hasPermission('scan_qr'),daily:role==='supervisor',purchases:['reception','supervisor'].includes(role),finance:['reception','supervisor'].includes(role),reports:role==='supervisor',employees:role==='supervisor',audit:role==='supervisor',deleted:role==='supervisor'};
+ if(!allowed[view])return;
+ $('managerMenu').classList.add('hidden');$('managerMenuBtn').setAttribute('aria-expanded','false');
+ ['welcomePanel','scannerPanel','todayBookingsPanel','purchasesPanel','dailyFinancePanel','dashboardStats','bookingsAdminPanel','bookingPanel','bookingListPanel','dailyStatementPanel','reportsPanel','employeePanel','auditPanel','deletedBookingsPanel'].forEach(id=>$(id)?.classList.add('hidden'));
+ $('deletedBookingsBtn').classList.add('hidden');
+ if(view==='home'){$('welcomePanel').classList.remove('hidden');$('welcomeTitle').textContent='أهلًا '+(employee?.display_name||'بك')}
+ else if(view==='newBooking'){$('bookingsAdminPanel').classList.remove('hidden');$('bookingPanel').classList.remove('hidden')}
+ else if(view==='bookings'){$('bookingsAdminPanel').classList.remove('hidden');$('bookingListPanel').classList.remove('hidden');$('dashboardStats').classList.remove('hidden')}
+ else if(view==='today'){$('todayBookingsPanel').classList.remove('hidden');loadTodayBookings().catch(err=>message('appMessage','تعذر تحميل حجوزات اليوم: '+(err.message||'خطأ غير معروف'),'error'))}
+ else if(view==='scanner'){$('scannerPanel').classList.remove('hidden')}
  else if(view==='daily'){$('dailyStatementPanel').classList.remove('hidden');loadDailyStatement().catch(err=>message('appMessage','تعذر تحميل بيان اليوم: '+(err.message||'خطأ غير معروف'),'error'))}
- else if(view==='purchases'){$('scannerPanel').classList.remove('hidden');children.forEach(el=>{if(el.id!=='purchasesPanel')el.classList.add('manager-menu-hidden')});$('purchasesPanel').classList.remove('hidden');loadPurchases().catch(err=>message('appMessage','تعذر تحميل المشتريات: '+(err.message||'خطأ غير معروف'),'error'))}
+ else if(view==='purchases'){$('purchasesPanel').classList.remove('hidden');loadPurchases().catch(err=>message('appMessage','تعذر تحميل المشتريات: '+(err.message||'خطأ غير معروف'),'error'))}
  else if(view==='finance'){$('dailyFinancePanel').classList.remove('hidden');loadDailyFinance().catch(err=>message('appMessage','تعذر تحميل البيانات المالية: '+(err.message||'خطأ غير معروف'),'error'))}
  else if(view==='reports'){$('reportsPanel').classList.remove('hidden');loadReports().catch(err=>message('appMessage','تعذر تحميل التقارير: '+(err.message||'خطأ غير معروف'),'error'))}
  else if(view==='employees'){$('employeePanel').classList.remove('hidden');loadEmployees().catch(err=>message('appMessage','تعذر تحميل الموظفين: '+(err.message||'خطأ غير معروف'),'error'))}
  else if(view==='audit'){$('auditPanel').classList.remove('hidden');loadAuditLogs().catch(err=>message('appMessage','تعذر تحميل سجل العمليات: '+(err.message||'خطأ غير معروف'),'error'))}
+ else if(view==='deleted'){$('deletedBookingsPanel').classList.remove('hidden');loadDeletedBookings().catch(err=>message('appMessage','تعذر تحميل الحجوزات المحذوفة: '+(err.message||'خطأ غير معروف'),'error'))}
 }
-$('managerMenuBtn').addEventListener('click',()=>{const menu=$('managerMenu'),opening=menu.classList.contains('hidden');menu.classList.toggle('hidden',!opening);$('managerMenuBtn').setAttribute('aria-expanded',String(opening))});document.querySelectorAll('[data-manager-view]').forEach(btn=>btn.addEventListener('click',()=>showManagerView(btn.dataset.managerView)));document.addEventListener('click',e=>{if(!$('managerMenuWrap').contains(e.target)){$('managerMenu').classList.add('hidden');$('managerMenuBtn').setAttribute('aria-expanded','false')}});
+$('managerMenuBtn').addEventListener('click',()=>{const menu=$('managerMenu'),opening=menu.classList.contains('hidden');menu.classList.toggle('hidden',!opening);$('managerMenuBtn').setAttribute('aria-expanded',String(opening))});
+document.querySelectorAll('[data-manager-view]').forEach(btn=>btn.addEventListener('click',()=>showManagerView(btn.dataset.managerView)));
+document.querySelectorAll('[data-menu-action]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.menuAction==='refresh')$('refreshBtn').click();else if(btn.dataset.menuAction==='logout')$('logoutBtn').click();$('managerMenu').classList.add('hidden');$('managerMenuBtn').setAttribute('aria-expanded','false')}));
+document.addEventListener('click',e=>{if(!$('managerMenuWrap').contains(e.target)){$('managerMenu').classList.add('hidden');$('managerMenuBtn').setAttribute('aria-expanded','false')}});
 function showSchoolDetails(booking){$('schoolDetailsName').textContent=booking.school_name||'—';$('schoolDetailsContact').textContent=booking.school_contact_name||'—';$('schoolDetailsModal').classList.remove('hidden');$('closeSchoolDetailsBtn').focus()}
 function closeSchoolDetails(){$('schoolDetailsModal').classList.add('hidden')}
 $('bookingType').addEventListener('change',()=>{const isSchool=$('bookingType').value==='school';$('schoolFields').classList.toggle('hidden',!isSchool);$('schoolName').required=isSchool;$('schoolContactName').required=isSchool;if(!isSchool){$('schoolName').value='';$('schoolContactName').value=''}});
