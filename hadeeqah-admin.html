@@ -125,7 +125,7 @@ th,td{border-bottom-color:#344454}
     <svg class="welcome-logo" viewBox="0 0 64 64" role="img" aria-label="شعار حديقة طيور الريان" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="29" fill="#121820" stroke="#A9C5D9" stroke-width="2"/><path d="M14 44c8-8 17-10 31-7-6 2-10 5-13 10H14Z" fill="#345B78"/><path d="M20 37c-1-8 4-15 12-17 6-1 11 2 13 7l7 1-7 4c-1 7-7 11-14 10l-5 5-1-8-5-2Z" fill="#A9C5D9"/><path d="m42 26 10 1-8 5Z" fill="#D9E7F0"/><circle cx="39" cy="25" r="2" fill="#121820"/><path d="M18 48h30M23 52h20" stroke="#A9C5D9" stroke-width="2" stroke-linecap="round"/></svg>
     <p class="welcome-eyebrow">أهلًا وسهلًا بكم</p>
     <h1>حديقة طيور الريان</h1>
-    <p class="welcome-greeting">حيّاكم الله، ونورتوا نظام الحديقة</p>
+    <p id="welcomeGreeting" class="welcome-greeting">أهلًا بك</p>
     <p class="welcome-description">مرحبًا بك في حديقة طيور الريان؛ وجهة لمحبي الطيور الأليفة والتعرّف عليها والتفاعل معها. نحرص على تنظيم الزيارات وتسهيل إجراءات الاستقبال لتبدأ تجربة الزائر بكل ترحيب واهتمام.</p>
     <div class="welcome-features">
       <div class="welcome-feature"><strong>تجربة الطيور</strong>التعرّف على الطيور الأليفة والتفاعل معها</div>
@@ -367,6 +367,7 @@ async function loadSession(){
  pricing=priceRows||[];
  if(!company) throw new Error('تعذر العثور على الشركة المرتبطة بالحساب.');
  $('loginView').classList.add('hidden');$('appView').classList.add('hidden');$('welcomeView').classList.remove('hidden');
+ $('welcomeGreeting').textContent='أهلًا '+(employee.display_name||'بك')+'، نورت الحديقة';
  $('roleBadge').textContent=employee.role==='supervisor'?'مشرف':employee.role==='reception'?'مسؤول استقبال ومسح QR':'موظف حجوزات';$('welcomeTitle').textContent='أهلًا '+(employee.display_name||'بك');
  $('financeReportDate').value=localDateISO();
  applyPermissionVisibility();
