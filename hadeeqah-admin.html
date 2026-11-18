@@ -70,7 +70,15 @@ th,td{border-bottom-color:#344454}
 #bookingEditPage .field textarea{resize:vertical;line-height:1.8}
 #bookingEditReadOnly{border:1px solid #3c566b;background:#202f3d;color:#c8d8e5}
 #saveBookingEdit{background:#345b78}
-@media(max-width:760px){#bookingEditPage{margin:8px auto;padding:16px}.booking-edit-grid{grid-template-columns:minmax(0,1fr)}}
+.booking-edit-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+#bookingEditPage .changed-field{border-color:#a9c5d9!important;box-shadow:0 0 0 2px #345b784d;background:#243747!important}
+#bookingEditPage .field:has(.changed-field) label:after{content:' • تم التغيير';color:#a9c5d9;font-size:12px;font-weight:600}
+@media(max-width:760px){
+ #bookingEditPage{margin:8px auto;padding:16px;padding-bottom:94px}
+ .booking-edit-actions{position:fixed;left:0;right:0;bottom:0;z-index:6000;margin:0;padding:12px max(12px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:#121820;border-top:1px solid #40576a;box-shadow:0 -8px 24px #0007;flex-wrap:nowrap}
+ .booking-edit-actions button{flex:1;min-height:46px;margin:0}
+ .booking-edit-actions #saveBookingEdit{order:0}
+}
 
 </style>
 </head>
@@ -161,7 +169,7 @@ th,td{border-bottom-color:#344454}
        <div class="field"><label for="editCustomerNote">ملاحظات الحجز</label><textarea id="editCustomerNote" rows="3" maxlength="1000"></textarea></div>
        <div class="notice" id="bookingEditReadOnly" style="margin:12px 0"></div>
        <div id="bookingEditMessage" class="notice hidden" role="status"></div>
-       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button type="submit" id="saveBookingEdit" class="full">حفظ التعديلات</button><button type="button" id="cancelBookingEditBottom" class="secondary">إلغاء</button></div>
+       <div class="booking-edit-actions"><button type="submit" id="saveBookingEdit" class="full">حفظ التعديلات</button><button type="button" id="cancelBookingEditBottom" class="secondary">تراجع</button></div>
       </form>
     </section>
     <section id="bookingListPanel" class="panel">
@@ -569,6 +577,10 @@ function openBookingEditPage(b){
  $('editVisitDate').value=String(b.visit_date||'').slice(0,10);$('editVisitTime').value=String(b.visit_time||'').slice(0,5);
  $('editPartySize').value=String(b.party_size||1);$('editAmountDue').value=String(Number(b.amount_due||0));
  $('editSchoolName').value=b.school_name||'';$('editSchoolContact').value=b.school_contact_name||'';$('editCustomerNote').value=b.customer_note||'';
+ const bookingEditFields=['editCustomerName','editCustomerPhone','editVisitDate','editVisitTime','editPartySize','editAmountDue','editSchoolName','editSchoolContact','editCustomerNote'].map(id=>$(id));
+ bookingEditFields.forEach(field=>{field.dataset.originalValue=field.value;field.classList.remove('changed-field');});
+ if(!$('bookingEditForm').dataset.dirtyTracking){bookingEditFields.forEach(field=>{const updateDirty=()=>field.classList.toggle('changed-field',field.value!==field.dataset.originalValue);field.addEventListener('input',updateDirty);field.addEventListener('change',updateDirty)});$('bookingEditForm').dataset.dirtyTracking='1'}
+
  $('bookingEditReadOnly').textContent='حالة الحجز: '+(b.booking_status==='confirmed'?'مؤكد':b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':'قيد الانتظار')+' · حالة السداد: '+(b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':'غير مسدد')+' · المبلغ المحصّل: '+money(b.amount_paid||0)+' — حالة السداد وحالة الحجز لا تتغيران من هذه الصفحة.';
  $('bookingEditForm').onsubmit=async e=>{e.preventDefault();const name=$('editCustomerName').value.trim(),phone=$('editCustomerPhone').value.trim(),date=$('editVisitDate').value,time=$('editVisitTime').value,party=Number($('editPartySize').value),amount=Number($('editAmountDue').value),school=$('editSchoolName').value.trim(),contact=$('editSchoolContact').value.trim(),note=$('editCustomerNote').value.trim();
   if(!name||!date||!time||!Number.isInteger(party)||party<1||!Number.isFinite(amount)||amount<0){message('bookingEditMessage','تأكد من إدخال الاسم والتاريخ والوقت وعدد الزوار والسعر بشكل صحيح.','error');return}
@@ -578,7 +590,7 @@ function openBookingEditPage(b){
    const {error:updateError}=await supabase.from('hadeeqah_bookings').update(payload).eq('id',b.id).eq('company_id',company.id).is('deleted_at',null);
    if(updateError){if(/hadeeqah_bookings_unique_active_visit_slot|duplicate key|unique constraint/i.test(updateError.message||''))throw new Error('الوقت الجديد محجوز مسبقًا في اليوم نفسه. اختر وقتًا آخر.');throw updateError}
    $('bookingEditPage').classList.add('hidden');$('bookingListPanel').classList.remove('hidden');await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();await loadReports();message('appMessage','تم تعديل بيانات الحجز بنجاح.','ok')
-  }catch(err){message('bookingEditMessage',err.message||'تعذر تعديل الحجز.','error')}finally{btn.disabled=false;btn.textContent=old}
+  }catch(err){message('bookingEditMessage','فشل حفظ التعديلات: '+(err.message||'حدث خطأ غير معروف. لم يتم تأكيد حفظ التغييرات.'),'error')}finally{btn.disabled=false;btn.textContent=old}
  };
 }
 function closeBookingEditPage(){$('bookingEditPage').classList.add('hidden');$('bookingListPanel').classList.remove('hidden')}
