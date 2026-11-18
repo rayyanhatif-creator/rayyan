@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#121212">
+<meta name="theme-color" content="#121820">
 <title>حديقة طيور الريان | لوحة الحجوزات</title>
 <style>
 .manager-menu-wrap{position:relative;display:inline-block}.manager-menu{position:fixed;top:72px;right:max(12px,env(safe-area-inset-right));left:auto;z-index:99999;width:min(290px,calc(100vw - 24px));max-height:calc(100dvh - 92px);overflow-y:auto;overscroll-behavior:contain;padding:8px;background:#181818;border:1px solid #383838;border-radius:14px;box-shadow:0 18px 48px #000b;display:grid;gap:5px}.manager-menu.hidden{display:none!important}.manager-menu button{width:100%;text-align:right;background:#242424;border:1px solid #383838;padding:12px}.manager-menu button:hover{background:#005c45}.manager-menu button:disabled{opacity:.58;cursor:not-allowed;background:#202020;color:#b8b8b8;border-style:dashed}.manager-menu-hidden{display:none!important}.daily-finance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}.daily-finance-grid .field{margin:8px 0}.finance-status{font-size:12px;color:#b5b5b5}.finance-status.done{color:#8fe0be}@media(max-width:760px){.manager-menu{top:calc(64px + env(safe-area-inset-top));right:12px;left:12px;width:auto;max-height:calc(100dvh - 84px);overflow-y:auto}.manager-menu button{min-height:44px}}
@@ -36,6 +36,42 @@
 .manager-menu .menu-divider{height:1px;background:#383838;margin:5px 2px}
 #refreshBtn,#logoutBtn{display:none!important}
 @media(max-width:760px){.welcome-hero{min-height:360px;border-radius:17px;background-position:center;background-image:linear-gradient(180deg,rgba(4,20,15,.03) 0%,rgba(4,20,15,.28) 25%,rgba(4,20,15,.95) 100%),url('https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=1200&q=80')}}
+
+/* Calm navy and blue visual refresh; preserves existing behavior */
+:root{color-scheme:dark;--bg:#121820;--surface:#1a222c;--card:#222d39;--line:#344454;--green:#345b78;--green2:#294b65;--text:#f4f7fa;--muted:#b7c6d3;--red:#d32f2f}
+body{background:var(--bg);color:var(--text)}
+.manager-menu{background:#171f29;border-color:#344454}
+.manager-menu button{background:#202c38;border-color:#344454}
+.manager-menu button:hover{background:#345b78}
+.manager-menu .menu-divider{background:#344454}
+button{background:#345b78;color:#fff}
+button:hover{filter:brightness(1.1)}
+.secondary{background:#25313e;border-color:#415365;color:#e5edf4}
+.field label{color:#d6e1ea}
+.field input,.field select,.field textarea,input,select,textarea{background:#1b2530;color:#f4f7fa;border-color:#405264}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid #a9c5d9;outline-offset:1px}
+.badge{background:#253b4e;color:#c8deed}
+.stat strong,.report-card .metric strong{color:#a9c5d9}
+th,.report-card h4{color:#c4d8e8}
+td{color:#edf2f7}
+th,td{border-bottom-color:#344454}
+.notice{background:#202c38;color:#dce7ef}
+.notice.ok{background:#203b4b;color:#c8e4f5}
+.notice.error{background:#351d1d;color:#ffc6c6}
+.report-card{background:#1d2732;border-color:#344454}
+.welcome-hero{border-color:#345b78;background-color:#121820}
+.welcome-kicker{color:#d5e7f4}
+.welcome-dot{background:#a9c5d9;box-shadow:0 0 14px #a9c5d9}
+.booking-edit-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+#bookingEditPage{width:100%;max-width:760px;margin:14px auto;padding:clamp(16px,3vw,28px);border-color:#40576a;box-shadow:0 18px 48px #0004}
+#bookingEditPage h3{color:#f4f7fa}
+#bookingEditPage .field{margin:12px 0}
+#bookingEditPage .field input,#bookingEditPage .field select,#bookingEditPage .field textarea{width:100%;min-height:46px;padding:12px;border-radius:11px;border:1px solid #405264;background:#1b2530;color:#f4f7fa}
+#bookingEditPage .field textarea{resize:vertical;line-height:1.8}
+#bookingEditReadOnly{border:1px solid #3c566b;background:#202f3d;color:#c8d8e5}
+#saveBookingEdit{background:#345b78}
+@media(max-width:760px){#bookingEditPage{margin:8px auto;padding:16px}.booking-edit-grid{grid-template-columns:minmax(0,1fr)}}
+
 </style>
 </head>
 <body>
@@ -112,7 +148,7 @@
     <section id="bookingEditPage" class="panel hidden" style="max-width:760px;margin:14px auto">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><h3 style="margin:0 0 6px">تعديل بيانات الحجز</h3><p class="muted" id="bookingEditSubtitle" style="margin:0"></p></div><button type="button" id="cancelBookingEdit" class="secondary">رجوع للحجوزات</button></div>
       <form id="bookingEditForm" style="margin-top:18px">
-       <div class="daily-finance-grid">
+       <div class="booking-edit-grid">
         <div class="field"><label for="editCustomerName">اسم الزائر</label><input id="editCustomerName" required maxlength="160"></div>
         <div class="field"><label for="editCustomerPhone">رقم الجوال</label><input id="editCustomerPhone" type="tel" maxlength="30"></div>
         <div class="field"><label for="editVisitDate">تاريخ الزيارة</label><input id="editVisitDate" type="date" required></div>
