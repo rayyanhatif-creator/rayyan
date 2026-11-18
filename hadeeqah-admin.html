@@ -89,19 +89,51 @@ th,td{border-bottom-color:#344454}
  .booking-edit-actions #saveBookingEdit{order:0}
 }
 
+
+/* Welcome page shown after a successful sign-in */
+.welcome-screen{min-height:100dvh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,#123c32 0%,#121212 60%)}
+.welcome-card{width:min(760px,100%);margin:auto;padding:clamp(24px,5vw,48px);border:1px solid #315347;border-radius:26px;background:linear-gradient(145deg,#1b2622,#181818 68%);box-shadow:0 24px 70px #0007;text-align:center;overflow:hidden;position:relative}
+.welcome-card:before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:#0b543d22;top:-150px;left:calc(50% - 130px);pointer-events:none}
+.welcome-logo{width:100px;height:100px;margin:0 auto 18px;display:block;position:relative}
+.welcome-eyebrow{color:#9bcbb8;font-size:13px;margin:0 0 10px}
+.welcome-card h1{font-size:clamp(27px,5vw,39px);line-height:1.4;margin:0 0 12px}
+.welcome-greeting{color:#e1eee7;font-size:18px;margin:0 0 20px}
+.welcome-description{max-width:570px;margin:0 auto;color:#c3cbc7;line-height:2;font-size:15px}
+.welcome-features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:28px 0}
+.welcome-feature{padding:15px 10px;border:1px solid #34443d;border-radius:14px;background:#202722;color:#e7eee9;font-size:13px;line-height:1.8}
+.welcome-feature strong{display:block;color:#a9d6c2;font-size:15px;margin-bottom:4px}
+.welcome-enter{width:min(320px,100%);min-height:52px;font-size:16px;font-weight:700;margin-top:4px;background:linear-gradient(90deg,#0b543d,#087451)}
+.welcome-footer{font-size:12px;color:#8e9b94;margin:22px 0 0}
+@media(max-width:520px){.welcome-screen{padding:14px}.welcome-card{padding:26px 18px;border-radius:20px}.welcome-features{grid-template-columns:1fr;gap:8px;margin:22px 0}.welcome-feature{padding:11px}.welcome-logo{width:86px;height:86px}}
 </style>
 </head>
 <body>
 <div id="loginView" class="wrap">
   <section class="login">
     <div class="brand"><svg class="garden-mark" viewBox="0 0 64 64" role="img" aria-label="شعار حديقة طيور الريان" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="29" fill="#121820" stroke="#A9C5D9" stroke-width="2"/><path d="M14 44c8-8 17-10 31-7-6 2-10 5-13 10H14Z" fill="#345B78"/><path d="M20 37c-1-8 4-15 12-17 6-1 11 2 13 7l7 1-7 4c-1 7-7 11-14 10l-5 5-1-8-5-2Z" fill="#A9C5D9"/><path d="m42 26 10 1-8 5Z" fill="#D9E7F0"/><circle cx="39" cy="25" r="2" fill="#121820"/><path d="M18 48h30M23 52h20" stroke="#A9C5D9" stroke-width="2" stroke-linecap="round"/></svg><div><h1>حديقة طيور الريان</h1><div class="muted">نظام الحجوزات الداخلي</div></div></div>
-    <div class="login-intro"><h2>مرحبًا بك في نظام حديقة طيور الريان</h2><p>منصة داخلية تساعد فريق الحديقة على تنظيم حجوزات الزوار، وتحديث بيانات الزيارة، ومتابعة المبالغ المسجلة، وتسهيل إجراءات الاستقبال.</p><p class="login-tagline">نرتّب الزيارة لتكون أجمل من البداية.</p></div><h2 style="font-size:18px;margin:0 0 6px">تسجيل الدخول</h2><p class="muted" style="margin:0 0 10px">سجّل دخولك بالبريد الإلكتروني وكلمة المرور.</p>
+    <h2 style="font-size:18px;margin:0 0 6px">تسجيل الدخول</h2><p class="muted" style="margin:0 0 10px">سجّل دخولك بالبريد الإلكتروني وكلمة المرور.</p>
     <form id="unifiedLoginForm">
       <div class="field"><label for="loginIdentifier">البريد الإلكتروني</label><input id="loginIdentifier" type="email" autocomplete="username" required maxlength="254" placeholder="name@example.com"></div>
       <div class="field"><label for="unifiedPassword">كلمة المرور</label><input id="unifiedPassword" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div>
       <button id="unifiedLoginBtn" class="full" type="submit">دخول إلى النظام</button>
     </form>
     <div id="loginMessage" class="notice hidden" role="status"></div>
+  </section>
+</div>
+<div id="welcomeView" class="welcome-screen hidden">
+  <section class="welcome-card">
+    <svg class="welcome-logo" viewBox="0 0 64 64" role="img" aria-label="شعار حديقة طيور الريان" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="29" fill="#121820" stroke="#A9C5D9" stroke-width="2"/><path d="M14 44c8-8 17-10 31-7-6 2-10 5-13 10H14Z" fill="#345B78"/><path d="M20 37c-1-8 4-15 12-17 6-1 11 2 13 7l7 1-7 4c-1 7-7 11-14 10l-5 5-1-8-5-2Z" fill="#A9C5D9"/><path d="m42 26 10 1-8 5Z" fill="#D9E7F0"/><circle cx="39" cy="25" r="2" fill="#121820"/><path d="M18 48h30M23 52h20" stroke="#A9C5D9" stroke-width="2" stroke-linecap="round"/></svg>
+    <p class="welcome-eyebrow">أهلًا وسهلًا بكم</p>
+    <h1>حديقة طيور الريان</h1>
+    <p class="welcome-greeting">حيّاكم الله، ونورتوا نظام الحديقة</p>
+    <p class="welcome-description">مرحبًا بك في حديقة طيور الريان؛ وجهة لمحبي الطيور الأليفة والتعرّف عليها والتفاعل معها. نحرص على تنظيم الزيارات وتسهيل إجراءات الاستقبال لتبدأ تجربة الزائر بكل ترحيب واهتمام.</p>
+    <div class="welcome-features">
+      <div class="welcome-feature"><strong>تجربة الطيور</strong>التعرّف على الطيور الأليفة والتفاعل معها</div>
+      <div class="welcome-feature"><strong>تنظيم الزيارات</strong>متابعة الحجوزات ومواعيد الزوار</div>
+      <div class="welcome-feature"><strong>خدمة الزوار</strong>تسهيل إجراءات الاستقبال والزيارة</div>
+    </div>
+    <button id="enterDashboardBtn" class="welcome-enter" type="button">الانتقال إلى النظام</button>
+    <p class="welcome-footer">حديقة طيور الريان · نرحّب بكم دائمًا</p>
   </section>
 </div>
 <div id="appView" class="wrap hidden">
@@ -312,7 +344,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { 
 let sessionUser=null, employee=null, company=null, pricing=[], scanStream=null, scanActive=false, activeQrBooking=null, employeeDirectory=[];
 let editingEmployee=null;
 const $=id=>document.getElementById(id);
-function showLogin(){ $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); }
+function showLogin(){ $('welcomeView').classList.add('hidden'); $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); }
 // Keep the dashboard position when the page is refreshed.
 function saveDashboardPosition(){try{sessionStorage.setItem('hadeeqah-dashboard-scroll',String(window.scrollY||0));}catch(_){}}
 window.addEventListener('pagehide',saveDashboardPosition);
@@ -334,7 +366,7 @@ async function loadSession(){
  if(priceError) throw new Error('تعذر تحميل التسعيرة: '+priceError.message);
  pricing=priceRows||[];
  if(!company) throw new Error('تعذر العثور على الشركة المرتبطة بالحساب.');
- $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
+ $('loginView').classList.add('hidden');$('appView').classList.add('hidden');$('welcomeView').classList.remove('hidden');
  $('roleBadge').textContent=employee.role==='supervisor'?'مشرف':employee.role==='reception'?'مسؤول استقبال ومسح QR':'موظف حجوزات';$('welcomeTitle').textContent='أهلًا '+(employee.display_name||'بك');
  $('financeReportDate').value=localDateISO();
  applyPermissionVisibility();
@@ -874,6 +906,7 @@ async function loadDeletedBookings(){
 $('deletedBookingsBtn').addEventListener('click',async()=>{const panel=$('deletedBookingsPanel');panel.classList.toggle('hidden');if(!panel.classList.contains('hidden'))try{await loadDeletedBookings()}catch(err){message('appMessage','تعذر تحميل الحجوزات المحذوفة: '+(err.message||'خطأ غير معروف'),'error')}});
 $('closeDeletedBookingsBtn').addEventListener('click',()=>$('deletedBookingsPanel').classList.add('hidden'));
 $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role)){await loadTodayBookings();await loadDailyFinance()}if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs();await loadDailyStatement()}await loadCashSummary();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
+$('enterDashboardBtn').addEventListener('click',()=>{$('welcomeView').classList.add('hidden');$('appView').classList.remove('hidden');window.scrollTo(0,0)});
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((event,session)=>{if(session)return;if(event==='SIGNED_OUT'){sessionUser=null;employee=null;company=null;showLogin()}});
 window.__hadeeqahModuleReady = true;
