@@ -180,7 +180,10 @@ th,td{border-bottom-color:#344454}
         <div class="field"><label for="bookingType">نوع الحجز</label><select id="bookingType"><option value="regular">حجز عادي</option><option value="school">حجز مدرسة</option></select></div>
         <div id="schoolFields" class="hidden">
           <div class="field"><label for="schoolName">اسم المدرسة</label><input id="schoolName" maxlength="180" placeholder="اسم المدرسة"></div>
-          <div class="field"><label for="schoolContactName">اسم المسؤول</label><input id="schoolContactName" maxlength="120" placeholder="اسم مسؤول المدرسة"></div>
+          <div class="field"><label for="schoolContactName">اسم المشرفة</label><input id="schoolContactName" maxlength="120" placeholder="اسم المشرفة المسؤولة"></div>
+          <div class="field"><label for="schoolSupervisorCount">عدد المشرفين</label><input id="schoolSupervisorCount" type="number" min="0" max="500" step="1" value="0" inputmode="numeric"></div>
+          <div class="field"><label for="schoolStudentCount">عدد الطلاب</label><input id="schoolStudentCount" type="number" min="0" max="10000" step="1" value="0" inputmode="numeric"></div>
+          <div class="field"><label for="schoolStudentsFree">الطلاب دخولهم مجانًا</label><select id="schoolStudentsFree"><option value="yes">نعم، دخول الطلاب مجاني</option><option value="no">لا</option></select></div>
         </div>
         <div class="field"><label for="customerName">اسم الزائر</label><input id="customerName" required maxlength="120" placeholder="اسم الزائر أو المسؤول"></div>
         <div class="field"><label for="customerPhone">رقم الجوال</label><input id="customerPhone" type="tel" maxlength="30" placeholder="05xxxxxxxx"></div>
@@ -304,7 +307,12 @@ th,td{border-bottom-color:#344454}
     <button id="closeSchoolDetailsBtn" type="button" class="secondary school-close" aria-label="إغلاق">✕</button>
     <h3 id="schoolDetailsTitle">بيانات المدرسة</h3>
     <div class="school-detail"><span>اسم المدرسة</span><strong id="schoolDetailsName">—</strong></div>
-    <div class="school-detail"><span>اسم المسؤول</span><strong id="schoolDetailsContact">—</strong></div>
+    <div class="school-detail"><span>اسم المشرفة</span><strong id="schoolDetailsContact">—</strong></div>
+    <div class="school-detail"><span>التاريخ</span><strong id="schoolDetailsDate">—</strong></div>
+    <div class="school-detail"><span>عدد المشرفين</span><strong id="schoolDetailsSupervisors">—</strong></div>
+    <div class="school-detail"><span>عدد الطلاب</span><strong id="schoolDetailsStudents">—</strong></div>
+    <div class="school-detail"><span>دخول الطلاب مجانًا</span><strong id="schoolDetailsFree">—</strong></div>
+    <div class="school-detail"><span>رقم العميل</span><strong id="schoolDetailsPhone">—</strong></div>
     <button id="closeSchoolDetailsBtnBottom" type="button" class="full">إغلاق</button>
   </div>
 </div>
@@ -606,7 +614,7 @@ $('managerMenuBtn').addEventListener('click',()=>{const menu=$('managerMenu'),op
 document.querySelectorAll('[data-manager-view]').forEach(btn=>btn.addEventListener('click',()=>showManagerView(btn.dataset.managerView)));
 document.querySelectorAll('[data-menu-action]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.menuAction==='refresh')$('refreshBtn').click();else if(btn.dataset.menuAction==='logout')$('logoutBtn').click();$('managerMenu').classList.add('hidden');$('managerMenuBtn').setAttribute('aria-expanded','false')}));
 document.addEventListener('click',e=>{if(!$('managerMenuWrap').contains(e.target)){$('managerMenu').classList.add('hidden');$('managerMenuBtn').setAttribute('aria-expanded','false')}});
-function showSchoolDetails(booking){$('schoolDetailsName').textContent=booking.school_name||'—';$('schoolDetailsContact').textContent=booking.school_contact_name||'—';$('schoolDetailsModal').classList.remove('hidden');$('closeSchoolDetailsBtn').focus()}
+function showSchoolDetails(booking){const meta=booking.price_rule_snapshot&&typeof booking.price_rule_snapshot==='object'?booking.price_rule_snapshot:{};$('schoolDetailsName').textContent=booking.school_name||'—';$('schoolDetailsContact').textContent=booking.school_contact_name||'—';$('schoolDetailsDate').textContent=booking.visit_date||'—';$('schoolDetailsSupervisors').textContent=String(meta.school_supervisor_count??'—');$('schoolDetailsStudents').textContent=String(meta.school_student_count??'—');$('schoolDetailsFree').textContent=meta.school_students_free===true?'نعم':meta.school_students_free===false?'لا':'—';$('schoolDetailsPhone').textContent=booking.customer_phone||'—';$('schoolDetailsModal').classList.remove('hidden');$('closeSchoolDetailsBtn').focus()}
 function closeSchoolDetails(){$('schoolDetailsModal').classList.add('hidden')}
 $('bookingType').addEventListener('change',()=>{const isSchool=$('bookingType').value==='school';$('schoolFields').classList.toggle('hidden',!isSchool);$('schoolName').required=isSchool;$('schoolContactName').required=isSchool;if(!isSchool){$('schoolName').value='';$('schoolContactName').value=''}});
 $('closeSchoolDetailsBtn').addEventListener('click',closeSchoolDetails);$('closeSchoolDetailsBtnBottom').addEventListener('click',closeSchoolDetails);$('schoolDetailsModal').addEventListener('click',e=>{if(e.target===$('schoolDetailsModal'))closeSchoolDetails()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSchoolDetails()});
@@ -639,7 +647,7 @@ function closeBookingEditPage(){$('bookingEditPage').classList.add('hidden');$('
 $('cancelBookingEdit').addEventListener('click',closeBookingEditPage);$('cancelBookingEditBottom').addEventListener('click',closeBookingEditPage);
 async function loadBookings(){
  hideMessage('appMessage');
- const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_phone,school_name,school_contact_name,customer_note,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status,booking_status,created_at,deleted_at').eq('company_id',company.id).is('deleted_at',null).order('created_at',{ascending:false}).limit(1000);
+ const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_phone,school_name,school_contact_name,customer_note,visit_date,visit_time,party_size,amount_due,amount_paid,price_rule_snapshot,payment_status,booking_status,created_at,deleted_at').eq('company_id',company.id).is('deleted_at',null).order('created_at',{ascending:false}).limit(1000);
  if(error)throw error;
  $('totalBookings').textContent=rows.length;$('unpaidBookings').textContent=rows.filter(x=>x.payment_status!=='paid').length;
  if(employee?.role==='reception'){
@@ -706,7 +714,7 @@ $('bookingForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=$('createBookingBtn');btn.disabled=true;btn.textContent='جارٍ حفظ الحجز…';
  try{
   if(!['booking_employee','supervisor'].includes(employee?.role)&&!(employee?.role==='reception'&&hasPermission('create_booking')&&$('bookingPanel').dataset.receptionOpened==='true'))throw new Error('صلاحيتك الحالية لا تسمح بإنشاء الحجوزات.');
-  const isReception=employee?.role==='reception';const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),customerNote=$('customerNote').value.trim(),date=$('visitDate').value,count=Number($('partySize').value),result=priceFor(date,count),schoolBooking=!isReception&&$('bookingType').value==='school',schoolName=$('schoolName').value.trim(),schoolContactName=$('schoolContactName').value.trim(),manualEnabled=!isReception&&!$('manualPriceWrap').classList.contains('hidden')&&$('manualPrice').value.trim()!=='';
+  const isReception=employee?.role==='reception';const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),customerNote=$('customerNote').value.trim(),date=$('visitDate').value,count=Number($('partySize').value),result=priceFor(date,count),schoolBooking=!isReception&&$('bookingType').value==='school',schoolName=$('schoolName').value.trim(),schoolContactName=$('schoolContactName').value.trim(),schoolSupervisorCount=Number($('schoolSupervisorCount').value||0),schoolStudentCount=Number($('schoolStudentCount').value||0),schoolStudentsFree=$('schoolStudentsFree').value==='yes',manualEnabled=!isReception&&!$('manualPriceWrap').classList.contains('hidden')&&$('manualPrice').value.trim()!=='';
   if(!name||!date||!Number.isInteger(count)||count<1||count>100)throw new Error('تأكد من اسم الزائر وتاريخ الزيارة وعدد الأشخاص.');
   if(schoolBooking&&(!schoolName||!schoolContactName))throw new Error('أدخل اسم المدرسة واسم المسؤول لإكمال حجز المدرسة.');
   const editingPrice=!isReception&&!$('manualPriceWrap').classList.contains('hidden');
@@ -716,8 +724,9 @@ $('bookingForm').addEventListener('submit',async e=>{
   const finalAmount=useManual?Number(manualRaw):result.amount;
   if(!Number.isFinite(finalAmount)||finalAmount<0||finalAmount>1000000)throw new Error('أدخل سعرًا صحيحًا بين 0 و1,000,000 ريال.');
   const snapshot=useManual?{rule_name:'سعر يدوي',manual_price_override:true,party_size:count,amount_due:finalAmount,currency:'SAR'}:{rule_name:result.rule.rule_name,base_price:Number(result.rule.base_price),included_people:Number(result.rule.included_people),extra_person_price:Number(result.rule.extra_person_price),party_size:count,amount_due:finalAmount,currency:'SAR'};
+  if(schoolBooking){if(!Number.isInteger(schoolSupervisorCount)||schoolSupervisorCount<0||!Number.isInteger(schoolStudentCount)||schoolStudentCount<0)throw new Error('أدخل أعدادًا صحيحة للمشرفين والطلاب.');snapshot.school_supervisor_count=schoolSupervisorCount;snapshot.school_student_count=schoolStudentCount;snapshot.school_students_free=schoolStudentsFree;}
   const initialPayment=$('initialPaymentStatus').value;
-  const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value,visit_time_slot:$('visitTime').value||null,party_size:count,amount_due:finalAmount,amount_paid:initialPayment==='paid'?finalAmount:0,price_rule_snapshot:snapshot,payment_status:initialPayment==='paid'?'paid':'unpaid',booking_status:'pending',created_by:employee.id,school_name:schoolBooking?schoolName:null,school_contact_name:schoolBooking?schoolContactName:null,customer_note:customerNote||null}).select('id,booking_number,customer_name,customer_phone,school_name,school_contact_name,customer_note,visit_date,visit_time,party_size,amount_due,amount_paid,payment_status').single();
+  const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value,visit_time_slot:$('visitTime').value||null,party_size:count,amount_due:finalAmount,amount_paid:initialPayment==='paid'?finalAmount:0,price_rule_snapshot:snapshot,payment_status:initialPayment==='paid'?'paid':'unpaid',booking_status:'pending',created_by:employee.id,school_name:schoolBooking?schoolName:null,school_contact_name:schoolBooking?schoolContactName:null,customer_note:customerNote||null}).select('id,booking_number,customer_name,customer_phone,school_name,school_contact_name,customer_note,visit_date,visit_time,party_size,amount_due,amount_paid,price_rule_snapshot,payment_status').single();
   if(error)throw error;
   const token=randomToken(),tokenHash=await sha256(token);
   const {error:qrError}=await supabase.rpc('hadeeqah_assign_qr_token',{p_booking_id:booking.id,p_token_hash:tokenHash});
