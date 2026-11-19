@@ -244,6 +244,13 @@ th,td{border-bottom-color:#344454}
       <div class="report-card"><h4>هذا الأسبوع</h4><div class="metric"><span>الحجوزات</span><strong id="reportWeekBookings">—</strong></div><div class="metric"><span>قيمة الحجوزات</span><strong id="reportWeekDue">—</strong></div><div class="metric"><span>المحصّل</span><strong id="reportWeekCollected">—</strong></div><div class="metric"><span>المتبقي</span><strong id="reportWeekRemaining">—</strong></div><div class="metric"><span>الواصلون</span><strong id="reportWeekArrivals">—</strong></div></div>
       <div class="report-card"><h4>هذا الشهر</h4><div class="metric"><span>الحجوزات</span><strong id="reportMonthBookings">—</strong></div><div class="metric"><span>قيمة الحجوزات</span><strong id="reportMonthDue">—</strong></div><div class="metric"><span>المحصّل</span><strong id="reportMonthCollected">—</strong></div><div class="metric"><span>المتبقي</span><strong id="reportMonthRemaining">—</strong></div><div class="metric"><span>الواصلون</span><strong id="reportMonthArrivals">—</strong></div></div>
     </div>
+    <section style="margin-top:22px">
+      <h3>الكاش المستلم حسب الموظف — اليوم</h3>
+      <p class="muted" id="cashReceiptReportDate">—</p>
+      <div class="table-wrap"><table><thead><tr><th>الموظف المستلم</th><th>إجمالي الكاش</th><th>عدد عمليات الاستلام</th></tr></thead><tbody id="cashReceiptEmployeeRows"><tr><td colspan="3" class="empty">جارٍ تحميل سجل الكاش…</td></tr></tbody></table></div>
+      <h3 style="margin-top:18px">تفاصيل المبالغ المستلمة</h3>
+      <div class="table-wrap"><table style="min-width:700px"><thead><tr><th>وقت الاستلام</th><th>الموظف المستلم</th><th>رقم الحجز</th><th>الزائر</th><th>المبلغ المستلم</th></tr></thead><tbody id="cashReceiptRows"><tr><td colspan="5" class="empty">جارٍ تحميل سجل الكاش…</td></tr></tbody></table></div>
+    </section>
   </section>
   <section id="auditPanel" class="panel hidden" style="margin-top:16px">
     <h3>سجل حركة النظام</h3><p class="muted">يسجل إنشاء الحجز وتغيير السداد والحالة وتجديد QR وعمليات الوصول. يظهر اسم الموظف والوقت ورقم الحجز.</p>
@@ -509,6 +516,28 @@ async function loadCashPayments(){
  }
 }
 
+async function loadCashReceiptReport(){
+ const today=localDateISO();
+ $('cashReceiptReportDate').textContent='تاريخ اليوم: '+today+' — يظهر كل مبلغ نقدي مسجل واسم الموظف الذي استلمه.';
+ const start=new Date(today+'T00:00:00+03:00').toISOString();
+ const end=new Date(new Date(today+'T00:00:00+03:00').getTime()+86400000).toISOString();
+ const {data:payments,error}=await supabase.from('hadeeqah_cash_payments').select('id,booking_id,amount,received_by,created_at').eq('company_id',company.id).gte('created_at',start).lt('created_at',end).order('created_at',{ascending:false}).limit(1000);
+ if(error)throw error;
+ const list=payments||[],bookingIds=[...new Set(list.map(p=>p.booking_id).filter(Boolean))],employeeIds=[...new Set(list.map(p=>p.received_by).filter(Boolean))];
+ let bookings=[],employees=[];
+ if(bookingIds.length){const q=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name').eq('company_id',company.id).in('id',bookingIds);if(q.error)throw q.error;bookings=q.data||[]}
+ if(employeeIds.length){const q=await supabase.from('hadeeqah_employees').select('id,display_name').eq('company_id',company.id).in('id',employeeIds);if(q.error)throw q.error;employees=q.data||[]}
+ const bookingMap=new Map(bookings.map(b=>[b.id,b])),employeeMap=new Map(employees.map(e=>[e.id,e.display_name]));
+ const totals=new Map();
+ for(const p of list){const name=employeeMap.get(p.received_by)||'موظف غير معروف',t=totals.get(name)||{amount:0,count:0};t.amount+=Number(p.amount||0);t.count++;totals.set(name,t)}
+ const summary=$('cashReceiptEmployeeRows');summary.replaceChildren();
+ if(!totals.size){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=3;td.className='empty';td.textContent='ما تسجل كاش اليوم.';tr.append(td);summary.append(tr)}
+ else for(const [name,t] of [...totals.entries()].sort((a,b)=>b[1].amount-a[1].amount)){const tr=document.createElement('tr');for(const value of [name,money(t.amount),String(t.count)]){const td=document.createElement('td');td.textContent=value;tr.append(td)}summary.append(tr)}
+ const body=$('cashReceiptRows');body.replaceChildren();
+ if(!list.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.className='empty';td.textContent='ما تسجل كاش اليوم.';tr.append(td);body.append(tr);return}
+ for(const p of list){const b=bookingMap.get(p.booking_id),tr=document.createElement('tr'),when=new Date(p.created_at).toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',dateStyle:'short',timeStyle:'short'});for(const value of [when,employeeMap.get(p.received_by)||'موظف غير معروف',b?'#'+b.booking_number:'—',b?.customer_name||'—',money(p.amount)]){const td=document.createElement('td');td.textContent=value;tr.append(td)}body.append(tr)}
+}
+
 async function loadReports(){
  const {data,error}=await supabase.rpc('hadeeqah_financial_report');
  if(error)throw error;
@@ -523,6 +552,8 @@ async function loadReports(){
   $(prefix+'Arrivals').textContent=String(bucket.arrivals||0);
  }
 }
+
+$('refreshReportsBtn')?.addEventListener('click',()=>Promise.all([loadReports(),loadCashReceiptReport()]).catch(err=>message('appMessage','تعذر تحديث التقارير أو سجل الكاش: '+(err.message||'خطأ غير معروف'),'error')));
 
 function auditActionLabel(action){
  const labels={
@@ -610,7 +641,7 @@ function showManagerView(view){
  else if(view==='scanner'){$('scannerPanel').classList.remove('hidden')}
  else if(view==='daily'){$('dailyStatementPanel').classList.remove('hidden');loadDailyStatement().catch(err=>message('appMessage','تعذر تحميل بيان اليوم: '+(err.message||'خطأ غير معروف'),'error'))}
  else if(view==='finance'){$('dailyFinancePanel').classList.remove('hidden');$('dailyFinanceForm').classList.remove('hidden');loadDailyFinance().catch(err=>message('appMessage','تعذر تحميل البيانات المالية: '+(err.message||'خطأ غير معروف'),'error'))}
- else if(view==='reports'){$('reportsPanel').classList.remove('hidden');loadReports().catch(err=>message('appMessage','تعذر تحميل التقارير: '+(err.message||'خطأ غير معروف'),'error'))}
+ else if(view==='reports'){$('reportsPanel').classList.remove('hidden');Promise.all([loadReports(),loadCashReceiptReport()]).catch(err=>message('appMessage','تعذر تحميل التقارير أو سجل الكاش: '+(err.message||'خطأ غير معروف'),'error'))}
  else if(view==='employees'){$('employeePanel').classList.remove('hidden');loadEmployees().catch(err=>message('appMessage','تعذر تحميل الموظفين: '+(err.message||'خطأ غير معروف'),'error'))}
  else if(view==='audit'){$('auditPanel').classList.remove('hidden');loadAuditLogs().catch(err=>message('appMessage','تعذر تحميل سجل العمليات: '+(err.message||'خطأ غير معروف'),'error'))}
  else if(view==='deleted'){$('deletedBookingsPanel').classList.remove('hidden');loadDeletedBookings().catch(err=>message('appMessage','تعذر تحميل الحجوزات المحذوفة: '+(err.message||'خطأ غير معروف'),'error'))}
