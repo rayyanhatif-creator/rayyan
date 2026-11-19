@@ -648,8 +648,15 @@ function openBookingEditPage(b){
    if(school){const snapshot=b.price_rule_snapshot&&typeof b.price_rule_snapshot==='object'?{...b.price_rule_snapshot}:{};snapshot.school_supervisor_count=schoolSupervisorCount;snapshot.school_paid_student_count=schoolPaidStudentCount;snapshot.school_unpaid_student_count=schoolFreeTicketCount;payload.price_rule_snapshot=snapshot}
    const {error:updateError}=await supabase.from('hadeeqah_bookings').update(payload).eq('id',b.id).eq('company_id',company.id).is('deleted_at',null);
    if(updateError){if(/hadeeqah_bookings_unique_active_visit_slot|duplicate key|unique constraint/i.test(updateError.message||''))throw new Error('الوقت الجديد محجوز مسبقًا في اليوم نفسه. اختر وقتًا آخر.');throw updateError}
-   $('bookingEditPage').classList.add('hidden');$('bookingListPanel').classList.remove('hidden');await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();await loadReports();message('appMessage','تم تعديل بيانات الحجز بنجاح.','ok')
-  }catch(err){message('bookingEditMessage','فشل حفظ التعديلات: '+(err.message||'حدث خطأ غير معروف. لم يتم تأكيد حفظ التغييرات.'),'error')}finally{btn.disabled=false;btn.textContent=old}
+   const updatedBooking={...b,...payload,price_rule_snapshot:payload.price_rule_snapshot||b.price_rule_snapshot};
+   $('bookingEditPage').classList.add('hidden');$('bookingListPanel').classList.remove('hidden');
+   await loadBookings();if(['reception','supervisor'].includes(employee?.role))await loadTodayBookings();await loadReports();
+   const newToken=randomToken(),newTokenHash=await sha256(newToken);
+   const {error:rotateError}=await supabase.rpc('hadeeqah_rotate_qr_token',{p_booking_id:b.id,p_token_hash:newTokenHash});
+   if(rotateError)throw new Error('تم حفظ التعديلات، لكن تعذر إصدار QR جديد: '+(rotateError.message||'خطأ غير معروف')+'. استخدم زر «إعادة QR» لإصدار الرمز.');
+   await showQr(updatedBooking,newToken);
+   message('appMessage','تم تعديل بيانات الحجز وإصدار باركود جديد. الباركود السابق لم يعد صالحًا.','ok')
+  }catch(err){message('bookingEditMessage','تعذر إكمال العملية: '+(err.message||'حدث خطأ غير معروف.'),'error')}finally{btn.disabled=false;btn.textContent=old}
  };
 }
 function closeBookingEditPage(){$('bookingEditPage').classList.add('hidden');$('bookingListPanel').classList.remove('hidden')}
