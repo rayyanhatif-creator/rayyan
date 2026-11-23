@@ -393,7 +393,7 @@ function announceNewBooking(booking){
     window.speechSynthesis.speak(utterance);
    }catch(_){}
   }
- }else if('Notification' in window&&Notification.permission==='granted'){
+ }else if(bookingAlertsEnabled&&'Notification' in window&&Notification.permission==='granted'){
   try{new Notification('حديقة طيور الريان',{body:phrase,tag:'hadeeqah-new-booking-'+String(booking.id||Date.now()),renotify:false});}catch(_){}
  }
 }
@@ -1063,7 +1063,7 @@ $('deletedBookingsBtn').addEventListener('click',async()=>{const panel=$('delete
 $('closeDeletedBookingsBtn').addEventListener('click',()=>$('deletedBookingsPanel').classList.add('hidden'));
 $('refreshBtn').addEventListener('click',async()=>{try{await loadBookings();if(['reception','supervisor'].includes(employee?.role)){await loadTodayBookings();await loadDailyFinance()}if(employee?.role==='supervisor'){await loadEmployees();await loadReports();await loadAuditLogs();await loadDailyStatement()}await loadCashSummary();message('appMessage','تم تحديث البيانات.','ok')}catch(err){message('appMessage',err.message||'تعذر تحديث البيانات.','error')}});
 $('enterDashboardBtn').addEventListener('click',()=>{$('welcomeView').classList.add('hidden');$('appView').classList.remove('hidden');window.scrollTo(0,0)});
-$('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
+$('logoutBtn').addEventListener('click',async()=>{if(bookingAlertsChannel){try{await supabase.removeChannel(bookingAlertsChannel)}catch(_){}bookingAlertsChannel=null}await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((event,session)=>{if(session)return;if(event==='SIGNED_OUT'){sessionUser=null;employee=null;company=null;showLogin()}});
 window.__hadeeqahModuleReady = true;
 (async()=>{try{await loadSession();if(sessionUser&&employee){startBookingNotifications();restoreDashboardPosition()}}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}})();
