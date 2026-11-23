@@ -207,6 +207,9 @@ th,td{border-bottom-color:#344454}
         <div class="field"><label for="editVisitTime">وقت الزيارة</label><input id="editVisitTime" type="time" required></div>
         <div class="field"><label for="editPartySize">عدد الزوار</label><input id="editPartySize" type="number" min="1" max="1000" step="1" required></div>
         <div class="field"><label for="editAmountDue">إجمالي سعر الحجز (ريال)</label><input id="editAmountDue" type="number" min="0" max="1000000" step="0.01" required></div>
+        <div class="field"><label for="editCashAmount">المبلغ كاش (ريال)</label><input id="editCashAmount" type="number" min="0" max="1000000" step="0.01" value="0" required></div>
+        <div class="field"><label for="editSadadAmount">المبلغ سداد (ريال)</label><input id="editSadadAmount" type="number" min="0" max="1000000" step="0.01" value="0" required></div>
+        <div class="notice" id="editPaymentSplitTotal" style="margin:8px 0">إجمالي توزيع الدفع: 0 ريال</div>
         <div class="field"><label for="editSchoolName">اسم المدرسة (إن وجد)</label><input id="editSchoolName" maxlength="200"></div>
         <div class="field"><label for="editSchoolContact">اسم المشرفة (إن وجد)</label><input id="editSchoolContact" maxlength="160"></div>
         <div class="field"><label for="editSchoolSupervisorCount">عدد المشرفات</label><input id="editSchoolSupervisorCount" type="number" min="0" max="500" step="1"></div>
@@ -658,24 +661,26 @@ function openBookingEditPage(b){
  $('bookingEditSubtitle').textContent='رقم الحجز #'+b.booking_number+' — عدّل البيانات ثم احفظها.';
  $('editCustomerName').value=b.customer_name||'';$('editCustomerPhone').value=b.customer_phone||'';
  $('editVisitDate').value=String(b.visit_date||'').slice(0,10);$('editVisitTime').value=String(b.visit_time||'').slice(0,5);
- $('editPartySize').value=String(b.party_size||1);$('editAmountDue').value=String(Number(b.amount_due||0));
+ $('editPartySize').value=String(b.party_size||1);$('editAmountDue').value=String(Number(b.amount_due||0));$('editCashAmount').value=String(Number(b.cash_amount||0));$('editSadadAmount').value=String(Number(b.sadad_amount||0));$('editPaymentSplitTotal').textContent='إجمالي توزيع الدفع: '+money(Number(b.cash_amount||0)+Number(b.sadad_amount||0))+' من '+money(b.amount_due||0);
  $('editSchoolName').value=b.school_name||'';$('editSchoolContact').value=b.school_contact_name||'';$('editCustomerNote').value=b.customer_note||'';
  const schoolMeta=b.price_rule_snapshot&&typeof b.price_rule_snapshot==='object'?b.price_rule_snapshot:{};
  $('editSchoolSupervisorCount').value=String(schoolMeta.school_supervisor_count??0);
  $('editSchoolPaidStudentCount').value=String(schoolMeta.school_paid_student_count??0);
  $('editSchoolFreeTicketCount').value=String(schoolMeta.school_unpaid_student_count??0);
  ['editSchoolSupervisorCount','editSchoolPaidStudentCount','editSchoolFreeTicketCount'].forEach(id=>$(id).closest('.field').classList.toggle('hidden',!b.school_name));
- const bookingEditFields=['editCustomerName','editCustomerPhone','editVisitDate','editVisitTime','editPartySize','editAmountDue','editSchoolName','editSchoolContact','editSchoolSupervisorCount','editSchoolPaidStudentCount','editSchoolFreeTicketCount','editCustomerNote'].map(id=>$(id));
+ const bookingEditFields=['editCustomerName','editCustomerPhone','editVisitDate','editVisitTime','editPartySize','editAmountDue','editCashAmount','editSadadAmount','editSchoolName','editSchoolContact','editSchoolSupervisorCount','editSchoolPaidStudentCount','editSchoolFreeTicketCount','editCustomerNote'].map(id=>$(id));
  bookingEditFields.forEach(field=>{field.dataset.originalValue=field.value;field.classList.remove('changed-field');});
  if(!$('bookingEditForm').dataset.dirtyTracking){bookingEditFields.forEach(field=>{const updateDirty=()=>field.classList.toggle('changed-field',field.value!==field.dataset.originalValue);field.addEventListener('input',updateDirty);field.addEventListener('change',updateDirty)});$('bookingEditForm').dataset.dirtyTracking='1'}
 
  $('bookingEditReadOnly').textContent='حالة الحجز: '+(b.booking_status==='confirmed'?'مؤكد':b.booking_status==='arrived'?'وصل':b.booking_status==='cancelled'?'ملغي':'قيد الانتظار')+' · حالة السداد: '+(b.payment_status==='paid'?'تم السداد':Number(b.amount_paid||0)>0?'مدفوع جزئيًا':'غير مسدد')+' · المبلغ المحصّل: '+money(b.amount_paid||0)+' — حالة السداد وحالة الحجز لا تتغيران من هذه الصفحة.';
- $('bookingEditForm').onsubmit=async e=>{e.preventDefault();const name=$('editCustomerName').value.trim(),phone=$('editCustomerPhone').value.trim(),date=$('editVisitDate').value,time=$('editVisitTime').value,party=Number($('editPartySize').value),amount=Number($('editAmountDue').value),school=$('editSchoolName').value.trim(),contact=$('editSchoolContact').value.trim(),note=$('editCustomerNote').value.trim(),schoolSupervisorCount=Number($('editSchoolSupervisorCount').value||0),schoolPaidStudentCount=Number($('editSchoolPaidStudentCount').value||0),schoolFreeTicketCount=Number($('editSchoolFreeTicketCount').value||0);
+ const splitTotal=()=>Number($('editCashAmount').value||0)+Number($('editSadadAmount').value||0);['editCashAmount','editSadadAmount','editAmountDue'].forEach(id=>$(id).addEventListener('input',()=>{$('editPaymentSplitTotal').textContent='إجمالي توزيع الدفع: '+money(splitTotal())+' من '+money($('editAmountDue').value||0);$('editPaymentSplitTotal').classList.toggle('error',splitTotal()>Number($('editAmountDue').value||0))}));
+$('bookingEditForm').onsubmit=async e=>{e.preventDefault();const name=$('editCustomerName').value.trim(),phone=$('editCustomerPhone').value.trim(),date=$('editVisitDate').value,time=$('editVisitTime').value,party=Number($('editPartySize').value),amount=Number($('editAmountDue').value),cashAmount=Number($('editCashAmount').value||0),sadadAmount=Number($('editSadadAmount').value||0),school=$('editSchoolName').value.trim(),contact=$('editSchoolContact').value.trim(),note=$('editCustomerNote').value.trim(),schoolSupervisorCount=Number($('editSchoolSupervisorCount').value||0),schoolPaidStudentCount=Number($('editSchoolPaidStudentCount').value||0),schoolFreeTicketCount=Number($('editSchoolFreeTicketCount').value||0);
   if(!name||!date||!time||!Number.isInteger(party)||party<1||!Number.isFinite(amount)||amount<0){message('bookingEditMessage','تأكد من إدخال الاسم والتاريخ والوقت وعدد الزوار والسعر بشكل صحيح.','error');return}
   if(amount<Number(b.amount_paid||0)){message('bookingEditMessage','لا يمكن جعل سعر الحجز أقل من المبلغ المحصّل بالفعل.','error');return}
+  if(!Number.isFinite(cashAmount)||cashAmount<0||!Number.isFinite(sadadAmount)||sadadAmount<0||cashAmount+sadadAmount>amount){message('bookingEditMessage','تأكد أن مبلغ الكاش ومبلغ سداد غير سالبين ومجموعهما لا يتجاوز سعر الحجز.','error');return}
   if(school&&[schoolSupervisorCount,schoolPaidStudentCount,schoolFreeTicketCount].some(n=>!Number.isInteger(n)||n<0)){message('bookingEditMessage','أدخل أعدادًا صحيحة غير سالبة للمشرفات والطلاب والتذاكر المجانية.','error');return}
   const btn=$('saveBookingEdit');btn.disabled=true;const old=btn.textContent;btn.textContent='جارٍ حفظ التعديلات…';
-  try{const payload={customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:time,visit_time_slot:time,party_size:party,amount_due:amount,school_name:school||null,school_contact_name:contact||null,customer_note:note||null,updated_at:new Date().toISOString()};
+  try{const payload={customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:time,visit_time_slot:time,party_size:party,amount_due:amount,cash_amount:cashAmount,sadad_amount:sadadAmount,school_name:school||null,school_contact_name:contact||null,customer_note:note||null,updated_at:new Date().toISOString()};
    if(school){const snapshot=b.price_rule_snapshot&&typeof b.price_rule_snapshot==='object'?{...b.price_rule_snapshot}:{};snapshot.school_supervisor_count=schoolSupervisorCount;snapshot.school_paid_student_count=schoolPaidStudentCount;snapshot.school_unpaid_student_count=schoolFreeTicketCount;payload.price_rule_snapshot=snapshot}
    const {error:updateError}=await supabase.from('hadeeqah_bookings').update(payload).eq('id',b.id).eq('company_id',company.id).is('deleted_at',null);
    if(updateError){if(/hadeeqah_bookings_unique_active_visit_slot|duplicate key|unique constraint/i.test(updateError.message||''))throw new Error('الوقت الجديد محجوز مسبقًا في اليوم نفسه. اختر وقتًا آخر.');throw updateError}
@@ -711,7 +716,7 @@ function renderSchoolBookingRows(rows){
 }
 async function loadBookings(){
  hideMessage('appMessage');
- const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_phone,school_name,school_contact_name,customer_note,visit_date,visit_time,party_size,amount_due,amount_paid,price_rule_snapshot,payment_status,booking_status,created_at,deleted_at').eq('company_id',company.id).is('deleted_at',null).order('created_at',{ascending:false}).limit(1000);
+ const {data:rows,error}=await supabase.from('hadeeqah_bookings').select('id,booking_number,customer_name,customer_phone,school_name,school_contact_name,customer_note,visit_date,visit_time,party_size,amount_due,amount_paid,cash_amount,sadad_amount,price_rule_snapshot,payment_status,booking_status,created_at,deleted_at').eq('company_id',company.id).is('deleted_at',null).order('created_at',{ascending:false}).limit(1000);
  if(error)throw error;
  renderSchoolBookingRows(rows);
  $('totalBookings').textContent=rows.length;$('unpaidBookings').textContent=rows.filter(x=>x.payment_status!=='paid').length;
