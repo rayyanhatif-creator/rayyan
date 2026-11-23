@@ -137,7 +137,7 @@ th,td{border-bottom-color:#344454}
   </section>
 </div>
 <div id="appView" class="wrap hidden">
-  <header class="header"><div><div class="brand" style="margin:0"><svg class="garden-mark" viewBox="0 0 64 64" role="img" aria-label="شعار حديقة طيور الريان" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="29" fill="#121820" stroke="#A9C5D9" stroke-width="2"/><path d="M14 44c8-8 17-10 31-7-6 2-10 5-13 10H14Z" fill="#345B78"/><path d="M20 37c-1-8 4-15 12-17 6-1 11 2 13 7l7 1-7 4c-1 7-7 11-14 10l-5 5-1-8-5-2Z" fill="#A9C5D9"/><path d="m42 26 10 1-8 5Z" fill="#D9E7F0"/><circle cx="39" cy="25" r="2" fill="#121820"/><path d="M18 48h30M23 52h20" stroke="#A9C5D9" stroke-width="2" stroke-linecap="round"/></svg><div><h1>حديقة طيور الريان</h1><div class="muted">لوحة إدارة الحجوزات</div></div></div></div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span id="roleBadge" class="badge">حساب موظف</span><div id="managerMenuWrap" class="manager-menu-wrap"><button id="managerMenuBtn" type="button" class="secondary" aria-label="القائمة الرئيسية" aria-expanded="false" style="font-size:22px;line-height:1;padding:8px 14px">⋮</button><div id="managerMenu" class="manager-menu hidden" role="menu"><button type="button" data-manager-view="home" data-roles="all">الرئيسية والترحيب</button><div class="menu-divider" data-roles="all"></div><button type="button" data-manager-view="newBooking" data-roles="booking_employee,reception,supervisor" data-permission="create_booking">حجز جديد</button><button type="button" data-manager-view="bookings" data-roles="booking_employee,supervisor" data-permission="view_bookings">الحجوزات</button><button type="button" data-manager-view="today" data-roles="reception,supervisor">حجوزات اليوم</button><button type="button" data-manager-view="cashPayments" data-roles="reception">دفع الكاش</button><button type="button" data-manager-view="scanner" data-roles="reception,supervisor" data-permission="scan_qr">استقبال الزوار ومسح الباركود</button><button type="button" data-manager-view="daily" data-roles="supervisor">بيان اليوم</button><button type="button" data-manager-view="finance" data-roles="reception,supervisor">البيان المالي</button><button type="button" data-manager-view="reports" data-roles="supervisor">التقارير</button><button type="button" data-manager-view="employees" data-roles="supervisor">الموظفون والصلاحيات</button><button type="button" data-manager-view="audit" data-roles="supervisor">سجل العمليات</button><button type="button" data-manager-view="deleted" data-roles="supervisor">الحجوزات المحذوفة</button><div class="menu-divider" data-roles="all"></div><button type="button" data-menu-action="refresh" data-roles="all" class="secondary">تحديث البيانات</button><button type="button" data-menu-action="logout" data-roles="all" class="secondary">تسجيل الخروج</button></div></div><button id="refreshBtn" class="secondary">تحديث</button><button id="logoutBtn" class="secondary">خروج</button></div></header>
+  <header class="header"><div><div class="brand" style="margin:0"><svg class="garden-mark" viewBox="0 0 64 64" role="img" aria-label="شعار حديقة طيور الريان" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="29" fill="#121820" stroke="#A9C5D9" stroke-width="2"/><path d="M14 44c8-8 17-10 31-7-6 2-10 5-13 10H14Z" fill="#345B78"/><path d="M20 37c-1-8 4-15 12-17 6-1 11 2 13 7l7 1-7 4c-1 7-7 11-14 10l-5 5-1-8-5-2Z" fill="#A9C5D9"/><path d="m42 26 10 1-8 5Z" fill="#D9E7F0"/><circle cx="39" cy="25" r="2" fill="#121820"/><path d="M18 48h30M23 52h20" stroke="#A9C5D9" stroke-width="2" stroke-linecap="round"/></svg><div><h1>حديقة طيور الريان</h1><div class="muted">لوحة إدارة الحجوزات</div></div></div></div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span id="roleBadge" class="badge">حساب موظف</span><div id="managerMenuWrap" class="manager-menu-wrap"><button id="managerMenuBtn" type="button" class="secondary" aria-label="القائمة الرئيسية" aria-expanded="false" style="font-size:22px;line-height:1;padding:8px 14px">⋮</button><div id="managerMenu" class="manager-menu hidden" role="menu"><button type="button" data-manager-view="home" data-roles="all">الرئيسية والترحيب</button><div class="menu-divider" data-roles="all"></div><button type="button" data-manager-view="newBooking" data-roles="booking_employee,reception,supervisor" data-permission="create_booking">حجز جديد</button><button type="button" data-manager-view="bookings" data-roles="booking_employee,supervisor" data-permission="view_bookings">الحجوزات</button><button type="button" data-manager-view="today" data-roles="reception,supervisor">حجوزات اليوم</button><button type="button" data-manager-view="cashPayments" data-roles="reception">دفع الكاش</button><button type="button" data-manager-view="scanner" data-roles="reception,supervisor" data-permission="scan_qr">استقبال الزوار ومسح الباركود</button><button type="button" data-manager-view="daily" data-roles="supervisor">بيان اليوم</button><button type="button" data-manager-view="finance" data-roles="reception,supervisor">البيان المالي</button><button type="button" data-manager-view="reports" data-roles="supervisor">التقارير</button><button type="button" data-manager-view="employees" data-roles="supervisor">الموظفون والصلاحيات</button><button type="button" data-manager-view="audit" data-roles="supervisor">سجل العمليات</button><button type="button" data-manager-view="deleted" data-roles="supervisor">الحجوزات المحذوفة</button><div class="menu-divider" data-roles="all"></div><button type="button" data-menu-action="refresh" data-roles="all" class="secondary">تحديث البيانات</button><button type="button" data-menu-action="logout" data-roles="all" class="secondary">تسجيل الخروج</button></div></div><button id="refreshBtn" class="secondary">تحديث</button><button id="bookingAlertsBtn" class="secondary" type="button" title="تفعيل التنبيه الصوتي للحجوزات الجديدة">🔔 تفعيل التنبيه</button><button id="logoutBtn" class="secondary">خروج</button></div></header>
   <section id="welcomePanel" class="welcome-hero"><div class="welcome-copy"><span class="welcome-kicker">حديقة طيور الريان · لوحة الإدارة</span><h2 id="welcomeTitle">أهلًا وسهلًا بك</h2><p>نسعد بوجودك معنا. من القائمة بالأعلى تقدر تدخل إلى القسم اللي تحتاجه، وكل قسم مستقل عن الثاني لسهولة الاستخدام.</p><div class="welcome-hint"><span class="welcome-dot"></span><span>اختر ⋮ لعرض أقسام النظام</span></div></div></section>
   <div id="appMessage" class="notice hidden" role="status"></div>
   <section id="scannerPanel" class="panel hidden" style="margin-bottom:12px">
@@ -373,6 +373,69 @@ function saveDashboardPosition(){try{sessionStorage.setItem('hadeeqah-dashboard-
 window.addEventListener('pagehide',saveDashboardPosition);
 window.addEventListener('beforeunload',saveDashboardPosition);
 function restoreDashboardPosition(){try{const saved=sessionStorage.getItem('hadeeqah-dashboard-scroll');if(saved!==null){const y=Number(saved);requestAnimationFrame(()=>window.scrollTo(0,Number.isFinite(y)?y:0));}}catch(_){}}
+let bookingAlertsEnabled=false;
+let bookingAlertsChannel=null;
+function updateBookingAlertsButton(){
+ const btn=$('bookingAlertsBtn');
+ if(!btn)return;
+ btn.textContent=bookingAlertsEnabled?'🔔 التنبيه مفعّل':'🔔 تفعيل التنبيه';
+ btn.setAttribute('aria-pressed',bookingAlertsEnabled?'true':'false');
+}
+function announceNewBooking(booking){
+ const name=String(booking?.customer_name||'زائر جديد').trim()||'زائر جديد';
+ const phrase='تم تسجيل حجز جديد باسم '+name;
+ if(document.visibilityState==='visible'){
+  if(bookingAlertsEnabled&&'speechSynthesis' in window){
+   try{
+    window.speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(phrase);
+    utterance.lang='ar-SA';utterance.rate=0.92;utterance.pitch=1;
+    window.speechSynthesis.speak(utterance);
+   }catch(_){}
+  }
+ }else if('Notification' in window&&Notification.permission==='granted'){
+  try{new Notification('حديقة طيور الريان',{body:phrase,tag:'hadeeqah-new-booking-'+String(booking.id||Date.now()),renotify:false});}catch(_){}
+ }
+}
+function startBookingNotifications(){
+ if(!company?.id||bookingAlertsChannel)return;
+ bookingAlertsChannel=supabase.channel('hadeeqah-new-bookings-'+company.id)
+  .on('postgres_changes',{event:'INSERT',schema:'public',table:'hadeeqah_bookings',filter:'company_id=eq.'+company.id},payload=>{
+   const booking=payload?.new;
+   if(!booking||booking.company_id!==company.id||booking.deleted_at)return;
+   announceNewBooking(booking);
+  })
+  .subscribe(status=>{
+   if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+    console.warn('تعذر الاتصال بتنبيهات الحجوزات اللحظية:',status);
+   }
+  });
+}
+$('bookingAlertsBtn').addEventListener('click',async()=>{
+ const btn=$('bookingAlertsBtn');
+ if(!bookingAlertsEnabled){
+  bookingAlertsEnabled=true;
+  try{localStorage.setItem('hadeeqah-booking-alerts-enabled','1')}catch(_){}
+  if('Notification' in window&&Notification.permission==='default'){
+   try{await Notification.requestPermission()}catch(_){}
+  }
+  updateBookingAlertsButton();
+  if('speechSynthesis' in window){
+   try{window.speechSynthesis.cancel();const test=new SpeechSynthesisUtterance('تم تفعيل التنبيه الصوتي للحجوزات الجديدة');test.lang='ar-SA';test.rate=0.92;window.speechSynthesis.speak(test)}catch(_){}
+  }
+  if(!('Notification' in window))message('appMessage','تم تفعيل الصوت أثناء فتح النظام. هذا المتصفح لا يدعم إشعارات الخلفية.','error');
+  else if(Notification.permission!=='granted')message('appMessage','تم تفعيل الصوت أثناء فتح النظام، لكن إذن الإشعارات غير مفعّل؛ اسمح بالإشعارات من إعدادات المتصفح لتظهر عند إخفاء الصفحة.','error');
+  else message('appMessage','تم تفعيل التنبيه الصوتي والإشعارات على هذا الجهاز. يجب تفعيلها على كل جهاز بشكل مستقل.','ok');
+ }else{
+  bookingAlertsEnabled=false;
+  try{localStorage.removeItem('hadeeqah-booking-alerts-enabled')}catch(_){}
+  updateBookingAlertsButton();
+  message('appMessage','تم إيقاف التنبيه على هذا الجهاز.','ok');
+ }
+});
+try{bookingAlertsEnabled=localStorage.getItem('hadeeqah-booking-alerts-enabled')==='1'}catch(_){}
+updateBookingAlertsButton();
+
 async function loadSession(){
  const {data:{session},error:sessionError}=await supabase.auth.getSession();
  if(sessionError) throw sessionError;
@@ -1003,7 +1066,7 @@ $('enterDashboardBtn').addEventListener('click',()=>{$('welcomeView').classList.
 $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();sessionUser=null;employee=null;company=null;showLogin()});
 supabase.auth.onAuthStateChange((event,session)=>{if(session)return;if(event==='SIGNED_OUT'){sessionUser=null;employee=null;company=null;showLogin()}});
 window.__hadeeqahModuleReady = true;
-(async()=>{try{await loadSession();if(sessionUser&&employee)restoreDashboardPosition()}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}})();
+(async()=>{try{await loadSession();if(sessionUser&&employee){startBookingNotifications();restoreDashboardPosition()}}catch(err){showLogin();message('loginMessage',err.message||'تعذر الاتصال بالنظام.','error')}})();
 </script>
 </body>
 </html>
