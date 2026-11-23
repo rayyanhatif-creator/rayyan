@@ -806,7 +806,6 @@ $('bookingForm').addEventListener('submit',async e=>{
   if(!Number.isFinite(cashAmount)||!Number.isFinite(sadadAmount)||cashAmount<0||sadadAmount<0)throw new Error('أدخل مبالغ كاش وسداد صحيحة وغير سالبة.');
   if(cashAmount+sadadAmount>finalAmount)throw new Error('مجموع الكاش وسداد لا يمكن أن يتجاوز السعر النهائي للحجز.');
   const hasSplit=cashAmount>0||sadadAmount>0;
-  if(hasSplit&&initialPayment==='paid')throw new Error('لما تدخل مبالغ الكاش وسداد، اختر «لم يتم السداد» في حالة الدفع؛ النظام بيحسب المدفوع من المبالغ المدخلة.');
   const paidInitially=hasSplit?sadadAmount:(initialPayment==='paid'?finalAmount:0);
   const {data:booking,error}=await supabase.from('hadeeqah_bookings').insert({company_id:company.id,customer_name:name,customer_phone:phone||null,visit_date:date,visit_time:$('visitTime').value,visit_time_slot:$('visitTime').value||null,party_size:count,amount_due:finalAmount,amount_paid:paidInitially,cash_amount:cashAmount,sadad_amount:sadadAmount,price_rule_snapshot:snapshot,payment_status:paidInitially>=finalAmount?'paid':'unpaid',booking_status:'pending',created_by:employee.id,school_name:schoolBooking?schoolName:null,school_contact_name:schoolBooking?schoolContactName:null,customer_note:customerNote||null}).select('id,booking_number,customer_name,customer_phone,school_name,school_contact_name,customer_note,visit_date,visit_time,party_size,amount_due,amount_paid,price_rule_snapshot,payment_status').single();
   if(error)throw error;
