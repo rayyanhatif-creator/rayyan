@@ -483,6 +483,7 @@ function applyPermissionVisibility(){
  $('dailyFinancePanel').classList.toggle('hidden',!['reception','supervisor'].includes(role));
  $('dailyFinanceForm').classList.toggle('hidden',!['reception','supervisor'].includes(role));
  $('financePaymentAmount').closest('.field').classList.toggle('hidden',role!=='supervisor');
+ $('financePaymentAmount').required=role==='supervisor';
  $('submitDailyFinanceBtn').textContent=role==='reception'?'إرسال البيان للإدارة':'حفظ البيان المالي';
  $('cashTodayEmployeeCard').classList.toggle('hidden',role!=='reception');
  document.querySelectorAll('[data-manager-view][data-roles]').forEach(btn=>{
